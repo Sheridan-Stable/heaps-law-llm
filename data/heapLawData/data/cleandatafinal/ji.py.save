@@ -1,0 +1,60 @@
+import json
+import glob
+import os
+import numpy as np
+from datetime import datetime
+from scipy.optimize import curve_fit
+from collections import Counter
+import random
+import csv
+import os
+import re
+
+
+
+def main():
+    # Pattern to match all JSON files in the current directory
+#	json_files = glob.glob('*.json')
+	json_files = glob.glob('*_human_*.json')
+    # Store the results for each file
+	results = []
+	# Define the CSV column headers
+
+	# Regular expression pattern for parsing filenames
+	filename_pattern = re.compile(
+	    r'^(?P<corpus>[^_]+)_'                   # Corpus: PubMed or hn
+	    r'(?P<model_name>[^-_]+)'                # Model Name: human or pythia
+	    r'(?:-'                                  # Start optional group for non-human models
+	    r'(?P<model_size>[\d\.]+[bBmM])_'        # Model Size: 2.8b
+	    r'(?P<prompt>[^_]+)_'                    # Prompt Type: fewshot
+	    r')?'                                    # End optional group
+	    r'(?P<vocab>[^\.]+)\.json$'              # Vocab Setting: Open or Close
+	)
+
+	# Open the CSV file in append mode (outside the loop)
+	with open(output_file, 'a', newline='') as f:
+	    writer = csv.writer(f)
+
+	    # Write the header only if the file is empty
+
+	    for file_path in json_files:
+	        file_name = os.path.basename(file_path)
+	        match = filename_pattern.match(file_name)
+
+	        if match:
+	                corpus = match.group("corpus").lower()
+	                model_name = match.group("model_name").lower()
+	                model_size = match.group("model_size").lower() if match.group("model_size") else None
+	                prompt = match.group("prompt").lower() if match.group("prompt") else None
+	                vocab = match.group("vocab").lower()
+	            else:
+	                corpus, model_name, model_size, prompt, vocab = None, None, None, None, None
+
+	            # Process the JSON and calculate statistics with the shuffled data
+	            mean, std_dev, vocab_size, total_words, word_counts, alpha, beta, singleton_count, r = process_json(file_path)
+
+	            # Debugging print statement to confirm iteration and seed used
+
+
+if __name__ == '__main__':
+    main()

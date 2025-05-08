@@ -1,0 +1,4 @@
+import pickle
+
+with open('final_dataset.pkl', 'rb') as file:
+    f = pickle.load(file)
