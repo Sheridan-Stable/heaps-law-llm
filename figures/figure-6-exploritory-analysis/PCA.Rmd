@@ -1,0 +1,148 @@
+```{r setup, include = FALSE}
+# Specify global settings
+knitr::opts_chunk$set(echo = TRUE)
+
+# Start fresh by clearing R environment
+rm(list = ls())
+```
+
+
+## Load Required Packages (Install if Needed)
+
+```{r}
+# Libraries
+library(tidyverse)
+library(RColorBrewer)
+library(scales)
+library(here)
+
+# Custom color scheme
+hex <- hue_pal()(3)
+gg_red <- hex[1]
+gg_green <- hex[2]
+gg_blue <- hex[3]
+gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]
+gg_purple <- "#C77CFF"
+```
+
+
+
+## Load and Prepare Data
+
+```{r}
+# Load the raw data:
+file_path  <- "heap_law_data_fix_rachel.csv"
+df_llm <- read.csv(file_path, stringsAsFactors = FALSE)
+
+```
+
+```{r}
+# Optional: Show the first 10 rows and first 10 columns
+head(df_llm[, 1:10], 10)
+
+# ---- 3. Partition df_llm into y (first 6 columns) and X (remaining columns) ----
+y <- df_llm[, 1:6]
+X <- df_llm[, 7:ncol(df_llm)]
+
+# ---- 4. Compute differences along columns, replicating np.diff(..., axis=1) in Python ----
+# Convert X to a matrix for numeric operations:
+X_mat <- as.matrix(X)
+
+# 'diff' in R operates along a vector, so we apply it row-by-row, then transpose back.
+# J is the difference for columns 1..60000
+J <- t(apply(X_mat[, 1:60000], 1, diff))
+
+# K is the difference for columns 60001..120000
+K <- t(apply(X_mat[, 60001:120000], 1, diff))
+
+# Concatenate J and K column-wise
+diff_X <- cbind(J, K)
+
+# ---- 5. PCA with up to 100 components to show variance explained ----
+pca_full <- prcomp(diff_X, center = TRUE, scale. = FALSE)
+
+# Compute proportion of variance explained
+variance <- pca_full$sdev^2
+explained_variance_ratio <- variance / sum(variance)
+
+# Plot the first 100 cumulative explained variance ratios
+cumulative_explained <- cumsum(explained_variance_ratio)
+plot(cumulative_explained[1:100], type = "b",
+     xlab = "Number of components",
+     ylab = "Cumulative explained variance",
+     main = "Figure 13: Cumulative explained variance vs. number of components")
+
+# ---- 6. PCA with 2 components (for plotting) ----
+# We can reuse pca_full and just take the first two PCs,
+# or explicitly do prcomp again. Below, we reuse pca_full:
+X_pca_2 <- pca_full$x[, 1:2]
+
+# ---- 7. 2D scatter plot using the first column of y as labels ----
+labels <- y[[1]]  # first column of y
+
+df_plot <- data.frame(
+  PC1 = X_pca_2[, 1],
+  PC2 = X_pca_2[, 2],
+  Label = labels
+)
+
+
+
+```
+
+```{r}
+# ----------------------------
+# 8. Define your custom colors
+#    (You specified 3 'hue_pal' colors, plus an orange & a purple)
+# ----------------------------
+hex <- hue_pal()(3)
+gg_red    <- hex[1]
+gg_green  <- hex[2]
+gg_blue   <- hex[3]
+gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]  # from "PuOr" palette
+gg_purple <- "#C77CFF"
+
+# If you have only four categories (wiki, pubmed, hn, book2):
+color_map <- c(
+  "wiki"   = gg_red,
+  "pubmed" = gg_green,
+  "hn"     = gg_blue,
+  "book2"  = gg_orange
+)
+
+# ----------------------------
+# 9. Plot the PCA in 2D with your custom color scheme
+#    Capitalize the first letter in the legend labels
+# ----------------------------
+p <- ggplot(df_plot, aes(x = PC1, y = PC2, color = Label)) +
+  geom_point() +
+  scale_color_manual(
+    values = color_map,
+    # Ensure "breaks" matches your actual data levels,
+    # and "labels" shows the capitalized text in the legend
+    breaks = c("wiki", "pubmed", "hn", "book2"),
+    labels = c("Wiki", "Pubmed", "Hacker News", "Book2"),
+    name   = "Corpus",           # <-- Set the legend title
+
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position       = c(0.99, 0.99),
+    legend.justification  = c("right", "top"),
+    legend.text           = element_text(size = rel(0.75)),
+    legend.background     = element_rect(fill = "gray95", color = NA),
+    plot.margin           = unit(c(1, 1, 1, 1), "cm")  # Adjust margins here
+  )
+
+ggsave(
+  plot = p,
+  filename = here("pca.png"),
+  device   = "png",
+  width    = 6,
+  height   = 6,
+  bg       = "transparent"
+)
+
+
+
+```
