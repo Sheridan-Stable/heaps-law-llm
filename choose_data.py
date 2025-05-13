@@ -121,32 +121,13 @@ def process_and_save(file_path, num_items, seed=None):
 # Print the total size of the lists
         print("Total size of all lists in the dictionary:", total_size)
 
-        # Select random items from the dictionary
-#        selected_items = select_random_items_from_dict(data, num_items, seed)
-#    else:
-        # General case: Check if data is a list, because only a list can be sampled
-#        if not isinstance(data, list):
-#            raise ValueError("The content of the file must be a list to select items from.")
 
-        # Select random items
-#        selected_items = select_random_items(data, num_items, seed)
-#        print(len(selected_items))
-
-    # Prepare the output file name
-#    base_name = os.path.basename(file_path)
-#    output_file_name = f"selected_{base_name}"
-
-    # Save the selected items to a new JSON file
-#    with open(output_file_name, 'w', encoding='utf-8') as output_file:
-#        json.dump(selected_items, output_file, indent=4)
-
-#    print(f"Selected items have been saved to {output_file_name}")
 
 print("start")
-#process_and_save('data/originalData/AllData/HackerNews.json', 240000, seed=62643)
-#print("done")
-#process_and_save('data/originalData/AllData/wiki.json', 240000, seed=62643)
-#print("done")
-#process_and_save('data/originalData/AllData/PUBMED_title_abstracts_2019_baseline.jsonl', 240000, seed=62643)
-#print("done")
+process_and_save('data/originalData/AllData/HackerNews.json', 240000, seed=62643)
+print("done")
+process_and_save('data/originalData/AllData/wiki.json', 240000, seed=62643)
+print("done")
+process_and_save('data/originalData/AllData/PUBMED_title_abstracts_2019_baseline.jsonl', 240000, seed=62643)
+print("done")
 process_and_save('data/originalData/AllData/processedBook3.json', 70000, seed=62643)  # Special case for dictionary

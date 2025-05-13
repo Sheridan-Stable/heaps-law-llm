@@ -17,9 +17,14 @@ cd heaps-law-llm
 ## Running Repository Code
 
 Repository code is written in Python 3.12.4 in Pycharm IDE. 
+After that we install all of the requirements. 
+
+```
+pip install -r requirements.txt
+```
 
 ## Data
-Our data are selected from the Pile <https://arxiv.org/abs/2101.00027>.  If you have any questions or would like further information about the dataset or our methodology, please email us at <paul.sheridan.stats@gmail.com>.
+Our data are selected from the Pile <https://arxiv.org/abs/2101.00027>.  If you have any questions or would like further information about the dataset or our methodology, please email us at Paul Sheridan <paul.sheridan.stats@gmail.com>.
 
 ## Text Emulation
 Due to the fact that we will emulating Human author text using different LLMs in a large scale. A pernonal computer will unable to to that task therefore we use Narval from Digital Research Alliance of Canada <https://ccdb.alliancecan.ca/security/login> to conduct these experiment. However, since every supercomputer enforces its own access policies and environment settings, this guide focuses solely on the Python commands you’ll need and does not include any Narval-specific instructions.
@@ -58,13 +63,36 @@ Then we run this command to create prompts.
 python create_prompt.py  --datasource 'Path to the data source' --name 'Name for the output file' --document_type  'Command to generate prompts'
 ```
 
+#### Text emulation
+After we create the prompt we can process with the text emulation part. 
+We created different file for different LLM due to the fact that they set up differently.
+We can specify each model differently in the parameter, here is one way to set them up however we can change it accordingly.
+
+For Pythia
+```
+python Pythia.py  --model "EleutherAI/pythia-160m-deduped" --input "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/prompt/pubmed/few_shot_pubmed.json" --output "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/generatedData/Pubmed-few-shot-pythia-160m" --start_point 0 --end_point 60000 --batch 48
+```
+
+For GPT-Neo
+```
+python GPT-Neo.py  --model "EleutherAI/gpt-neo-1.3B" --input "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/prompt/wiki/zero_shot_wiki.json" --output "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/generatedData/wiki-zero-shot-gptneo-1.3B.json" --start_point 0 --end_point 60000  --batch 32
+```
+
+For OPT 
+```
+python OPT.py  --model "facebook/opt-2.7b" --input "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/prompt/pubmed/few_shot_pubmed.json" --output "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/generatedData/Pubmed-few-shot-opt-2.7b.json" --start_point 0 --end_point 60000 --batch 20
+```
 
 ## Results
+After we are done with the text emulation, we run this script to get all of the required stat 
 
-### Statistical Analysis
+```
+cd \heaps-law-llm\data\generatedData
+python cal_data_suf.py
+```
 
-
-
+## Statistical Analysis
+Multiple regression analysis lie inside the "regression.Rmd" folder in \heaps-law-llm\analysis folder. 
 
 ## Figures
 Under the Figures folder, are the code which is written in R we used to create these figures for our paper. 

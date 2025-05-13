@@ -1,43 +1,37 @@
-import os
-import json
-from tqdm import tqdm
 import re
 
-# def sanitize_filename(filename: str) -> str:
-#     """Sanitize the filename by removing invalid characters."""
-#     return re.sub(r'[<>:"/\\|?*]', '_', filename)
-#
-# def process_books_to_dict_and_save(folder_path: str, output_filename: str = 'processedBook3.json'):
-#     # Dictionary to hold the processed data
-#     books_dict = {}
-#
-#     # Get list of all .txt files in the epubtxt folder
-#     txt_files = [f for f in os.listdir(folder_path) if f.endswith('.txt')]
-#
-#     for txt_file in tqdm(txt_files, desc="Processing books"):
-#         file_path = os.path.join(folder_path, txt_file)
-#         with open(file_path, 'r', encoding='utf-8') as file:
-#             content = file.readlines()
-#
-#         # Use the sanitized filename without the extension as the key
-#         base_filename = sanitize_filename(os.path.splitext(txt_file)[0])
-#         books_dict[base_filename] = content
-#
-#     # Define the path where the dictionary will be saved
-#     output_path = os.path.join(folder_path, output_filename)
-#
-#     # Save the dictionary as a JSON file
-#     with open(output_path, 'w', encoding='utf-8') as json_file:
-#         json.dump(books_dict, json_file, ensure_ascii=False, indent=4)
-#
-#     print(f"Processed data saved to {output_path}")
-#
-# # Example usage:
-# process_books_to_dict_and_save('AllData/books1/epubtxt')
+def sanitize_filename(filename: str) -> str:
+    """Sanitize the filename by removing invalid characters."""
+    return re.sub(r'[<>:"/\\|?*]', '_', filename)
 
-import os
-import json
-from tqdm import tqdm
+def process_books_to_dict_and_save(folder_path: str, output_filename: str = 'processedBook3.json'):
+    # Dictionary to hold the processed data
+    books_dict = {}
+
+    # Get list of all .txt files in the epubtxt folder
+    txt_files = [f for f in os.listdir(folder_path) if f.endswith('.txt')]
+
+    for txt_file in tqdm(txt_files, desc="Processing books"):
+        file_path = os.path.join(folder_path, txt_file)
+        with open(file_path, 'r', encoding='utf-8') as file:
+            content = file.readlines()
+
+        # Use the sanitized filename without the extension as the key
+        base_filename = sanitize_filename(os.path.splitext(txt_file)[0])
+        books_dict[base_filename] = content
+
+    # Define the path where the dictionary will be saved
+    output_path = os.path.join(folder_path, output_filename)
+
+    # Save the dictionary as a JSON file
+    with open(output_path, 'w', encoding='utf-8') as json_file:
+        json.dump(books_dict, json_file, ensure_ascii=False, indent=4)
+
+    print(f"Processed data saved to {output_path}")
+
+# Example usage:
+process_books_to_dict_and_save('AllData/books1/epubtxt')
+
 
 def combine_json_files(folder_path: str, output_filename: str = 'wikipedia_output.json'):
     combined_data = []
@@ -65,7 +59,7 @@ def combine_json_files(folder_path: str, output_filename: str = 'wikipedia_outpu
     print(f"Combined data saved to {output_path}")
 
 # Example usage:
-# combine_json_files('AllData/wikipedia_output-20240729T150327Z-001')
+combine_json_files('AllData/wikipedia_output-20240729T150327Z-001')
 
 import os
 import json

@@ -21,13 +21,6 @@ def load_json_or_jsonl(file_path):
 def document_count(data):
     return len(data)
 
-# def vocab_count(data):
-#     cleaner = CleanData(SimpleProcessing())
-#     clean_data = cleaner.cleanTheArray(data)
-#     vocab = set()
-#     for item in clean_data:
-#         vocab.update(item)
-#     return len(vocab)
 def averge(data):
     total = 0
     for item in data:
@@ -35,26 +28,22 @@ def averge(data):
     print(f"total word: {total}")
     return  total/len(data)
 
-
-
-
 def bookInfor(data):
     allpara = data.values()
     return allpara
 
 
-# Example usage (commented out since we're not running this in the PCI):
-# data_json = load_json_or_jsonl('AllData/HackerNews.json')
-# print(f"have average: {averge(data_json)}")
-# print(f"have document: {document_count(data_json)}")
+data_json = load_json_or_jsonl('AllData/HackerNews.json')
+print(f"have average: {averge(data_json)}")
+print(f"have document: {document_count(data_json)}")
 
-# data_json = load_json_or_jsonl('AllData/PUBMED_title_abstracts_2019_baseline.jsonl')
-# print(f"have average: {averge(data_json)}")
-# print(f"have document: {document_count(data_json)}")
+data_json = load_json_or_jsonl('AllData/PUBMED_title_abstracts_2019_baseline.jsonl')
+print(f"have average: {averge(data_json)}")
+print(f"have document: {document_count(data_json)}")
 
-# data_json = load_json_or_jsonl('AllData/wiki.json')
-# print(f"have average: {averge(data_json)}")
-# print(f"have document: {document_count(data_json)}")
+data_json = load_json_or_jsonl('AllData/wiki.json')
+print(f"have average: {averge(data_json)}")
+print(f"have document: {document_count(data_json)}")
 
 data_json = load_json_or_jsonl('AllData/wiki.json')
 data_json =  bookInfor(data_json)
@@ -63,4 +52,3 @@ print(f"have document: {document_count(data_json)}")
 
 
 
-# data_jsonl = load_json_or_jsonl('example.jsonl')

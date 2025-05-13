@@ -118,7 +118,7 @@ def main():
 	    r'(?P<vocab>[^\.]+)\.json$'              # Vocab Setting: Open or Close
 	)
 
-	output_file = f"heap_law_data_fix.csv"
+	output_file = f"../analysis/heap_law_data.csv"
 
 	# Define fixed seeds for reproducibility
 	fixed_seeds = [42, 123, 999]  # These seeds ensure the same shuffling each time

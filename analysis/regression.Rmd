@@ -1,0 +1,882 @@
+---
+title: "Multiple Linear Regression Analysis"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+output: html_notebook
+---
+
+```{r setup, include = FALSE}
+# Specify global settings
+knitr::opts_chunk$set(echo = TRUE)
+
+# Start fresh by clearing R environment
+rm(list = ls())
+```
+
+
+## Load Required Packages (Install if Needed)
+
+```{r}
+# Libraries
+library(tidyverse)
+library(GGally)
+library(fastDummies) # Create dummy variables
+library(plm) # Diagnose linear dependencies in model matrix
+library(ggpubr) # ANOVA boxplots
+library(RColorBrewer)
+library(scales)
+
+# Custom color scheme
+hex <- hue_pal()(3)
+gg_red <- hex[1]
+gg_green <- hex[2]
+gg_blue <- hex[3]
+gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]
+gg_purple <- "#C77CFF"
+```
+
+
+
+
+## Prepare Data
+
+```{r}
+file_path <- "official_dataset_heaps_law_paper-reduced.csv"  # <-- Change if necessary
+rawdata <- read.csv(file_path, stringsAsFactors = FALSE)
+```
+
+
+```{r}
+table(rawdata$corpus)
+table(rawdata$model_name)
+table(rawdata$model_size)
+table(rawdata$prompt)
+table(rawdata$vocab)
+```
+
+
+
+```{r}
+# Create wrangled data frame:
+dat <- rawdata |>
+  select(-c(file_name, mean, s.d, vocab_size, total_words, alpha, singleton_count, r)) |> #Drop
+  arrange(corpus) |>
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    prompt = factor(prompt, levels = c("none", "zeroshot", "oneshot", "fewshot")),
+    model_name = factor(model_name, levels = c("human", "gptneo", "pythia", "opt")),
+    corpus = factor(corpus, levels = c("pubmed", "book2", "hn", "wiki")),
+    model_size = factor(
+      case_when(
+        model_size %in% c("none") ~ "none",
+        model_size %in% c("70m", "125m", "160m", "350m", "410m") ~ "small",
+        model_size %in% c("1b", "1.3b", "1.4b", "2.7b", "2.8b") ~ "big"
+      ),
+      levels = c("none", "small", "big")
+    ),
+  )
+```
+
+
+
+## PubMed Case Study
+
+```{r}
+# Create wrangled data frame:
+data_human_vs_ai_pubmed <- rawdata |>
+  select(-c(file_name, mean, s.d, vocab_size, total_words, alpha, singleton_count, r)) |> # Drop
+  filter(model_name %in% c("human", "gptneo")) |> # Corrected filtering condition
+  filter(corpus == "pubmed") |> 
+  select(-c(corpus)) |> # Drop
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    prompt = factor(prompt, levels = c("none", "zeroshot", "oneshot", "fewshot")),
+    model_name = factor(model_name, levels = c("human", "gptneo")),
+    model_size = factor( # Corrected `model_size` assignment
+      case_when(
+        model_size %in% c("none") ~ "none",
+        model_size %in% c("70m", "125m", "160m", "350m", "410m") ~ "small",
+        model_size %in% c("1b", "1.3b", "1.4b", "2.7b", "2.8b") ~ "big"
+      ),
+      levels = c("none", "small", "big") # Moved inside `factor()`
+    ) 
+  )  
+
+  
+data_human_vs_ai_pubmed 
+```
+
+
+### Closed Vocab Setting
+
+```{r}
+# Create wrangled data frame:
+dat_case_human_vs_ai_pubmed_closed <- data_human_vs_ai_pubmed  |>
+  filter(vocab == "closed") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_human_vs_ai_pubmed_closed
+```
+
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_human_vs_ai_pubmed_closed<- dummy_cols(dat_case_human_vs_ai_pubmed_closed, select_columns = c("model_name", "model_size", "prompt")) |>
+  select(-c( "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_human_vs_ai_pubmed_closed
+```
+
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ ., data = dat_dummified_human_vs_ai_pubmed_closed)
+
+# View the summary:
+summary(lm_fit)
+```
+
+### Open Vocab Setting
+
+```{r}
+# Create wrangled data frame:
+dat_case_human_vs_ai_pubmed_open <- data_human_vs_ai_pubmed  |>
+  filter(vocab == "open") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_human_vs_ai_pubmed_open
+```
+
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_human_vs_ai_pubmed_open<- dummy_cols(dat_case_human_vs_ai_pubmed_open, select_columns = c("model_name", "model_size", "prompt")) |>
+  select(-c( "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_human_vs_ai_pubmed_open
+```
+
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ ., data = dat_dummified_human_vs_ai_pubmed_open)
+
+# View the summary:
+summary(lm_fit)
+
+
+```
+
+## Human vs. each individual AI model 
+
+### Closed Vocab Setting
+
+```{r}
+# Create wrangled data frame:
+dat_case_human_vs_ai_individual_closed <- dat |>
+  filter(vocab == "closed") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_human_vs_ai_individual_closed 
+```
+
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_human_vs_ai_individual_closed  <- dummy_cols(dat_case_human_vs_ai_individual_closed, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+  select(-c("corpus", "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("corpus_pubmed", "model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_human_vs_ai_individual_closed
+```
+
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ . +
+               model_name_pythia * model_size_big +
+               model_name_opt * model_size_big,
+             data = dat_dummified_human_vs_ai_individual_closed)
+
+# View the summary:
+summary(lm_fit)
+```
+
+
+
+### Open Vocab Setting
+
+```{r}
+# Create wrangled data frame:
+dat_case_human_vs_ai_individual_open <- dat |>
+  filter(vocab == "open") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_human_vs_ai_individual_open
+```
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_human_vs_ai_individual_open <- dummy_cols(dat_case_human_vs_ai_individual_open, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+  select(-c("corpus", "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("corpus_pubmed", "model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_human_vs_ai_individual_open
+```
+
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ . +
+               model_name_pythia * model_size_big +
+               model_name_opt * model_size_big,
+             data = dat_dummified_human_vs_ai_individual_open)
+
+# View the summary:
+summary(lm_fit)
+```
+
+
+### Open Vocab Setting with Model x Prompt Interaction
+
+```{r}
+# Create wrangled data frame:
+dat_case_human_vs_ai_individual_open <- dat |>
+  filter(vocab == "open") |>
+  select(-c(vocab)) #|>
+  #mutate(
+  #  prompt = factor(
+  #    case_when(
+  #      as.character(prompt) %in% c("oneshot", "fewshot") ~ "multishot",
+  #      as.character(prompt) == "zeroshot" ~ "zeroshot",
+  #      as.character(prompt) == "none" ~ "none"
+  #    ),
+  #    levels = c("none", "zeroshot", "multishot") # Correct placement of levels
+  #  )
+  #)
+
+# Output to console:
+dat_case_human_vs_ai_individual_open
+```
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_human_vs_ai_individual_open <- dummy_cols(dat_case_human_vs_ai_individual_open, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+  select(-c("corpus", "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("corpus_pubmed", "model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_human_vs_ai_individual_open
+```
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ . +
+               model_name_pythia * prompt_oneshot +
+               model_name_opt * prompt_oneshot +
+               model_name_pythia * prompt_fewshot +
+               model_name_opt * prompt_fewshot,
+             data = dat_dummified_human_vs_ai_individual_open)
+
+# View the summary:
+summary(lm_fit)
+```
+
+
+
+
+## AI vs AI
+
+```{r}
+# Create wrangled data frame:
+data_ai_vs_ai <- rawdata |>
+  select(-c(file_name, mean, s.d, vocab_size, total_words, alpha, singleton_count, r)) |> #Drop
+  filter(model_name != "human") |>
+  arrange(corpus) |>
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    prompt = factor(prompt, levels = c("zeroshot", "oneshot", "fewshot")),
+    model_name = factor(model_name, levels = c( "gptneo", "pythia", "opt")),
+    corpus = factor(corpus, levels = c("pubmed", "book2", "hn", "wiki")),
+    model_size = factor(
+      case_when(
+        model_size %in% c("70m", "125m", "160m", "350m", "410m") ~ "small",
+        model_size %in% c("1b", "1.3b", "1.4b", "2.7b", "2.8b") ~ "big"
+      ),
+      levels = c("small", "big")
+    ),
+  )
+```
+
+
+### Closed Vocab Setting
+
+```{r}
+# Create wrangled data frame:
+dat_case_ai_vs_ai_closed <- data_ai_vs_ai |>
+  filter(vocab == "closed") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_ai_vs_ai_closed
+```
+
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_ai_vs_ai_closed <- dummy_cols(dat_case_ai_vs_ai_closed, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+  select(-c("corpus", "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("corpus_pubmed","model_name_gptneo", "model_size_small", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_ai_vs_ai_closed
+```
+
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ . +
+               model_name_pythia * model_size_big +
+               model_name_opt * model_size_big,
+             data = dat_dummified_ai_vs_ai_closed)
+
+# View the summary:
+summary(lm_fit)
+```
+
+### Open Vocab Setting
+```{r}
+# Create wrangled data frame:
+dat_case_ai_vs_ai_open <- data_ai_vs_ai |>
+  filter(vocab == "open") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_ai_vs_ai_open
+```
+
+
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_ai_vs_ai_open <- dummy_cols(dat_case_ai_vs_ai_open, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+  select(-c("corpus", "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("corpus_pubmed","model_name_gptneo", "model_size_small", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_ai_vs_ai_open
+```
+
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ . +
+               model_name_pythia * model_size_big +
+               model_name_opt * model_size_big,
+             data = dat_dummified_ai_vs_ai_open)
+
+# View the summary:
+summary(lm_fit)
+```
+
+## Human vs. AI
+
+```{r}
+# Create wrangled data frame:
+dat <- rawdata |>
+  select(-c(file_name, mean, s.d, vocab_size, total_words, alpha, singleton_count, r)) |> #Drop
+  arrange(corpus) |>
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    prompt = factor(prompt, levels = c("none", "zeroshot", "oneshot", "fewshot")),
+    model_name = factor(model_name, levels = c("human", "gptneo", "pythia", "opt")),
+    corpus = factor(corpus, levels = c("pubmed", "book2", "hn", "wiki")),
+    model_size = factor(
+      case_when(
+        model_size %in% c("none") ~ "none",
+        model_size %in% c("70m", "125m", "160m", "350m", "410m") ~ "small",
+        model_size %in% c("1b", "1.3b", "1.4b", "2.7b", "2.8b") ~ "big"
+      ),
+      levels = c("none", "small", "big")
+    ),
+  )
+```
+
+
+```{r}
+dat_case_human_vs_ai <- dat |>
+  mutate(
+    model_name = factor(
+      case_when(
+        as.character(model_name) %in% c("opt", "pythia", "gptneo") ~ "ai",
+        as.character(model_name) == "human" ~ "human"
+      ),
+      levels = c("human", "ai") # Correct placement of levels
+    )
+  )
+
+# Print to console:
+dat_case_human_vs_ai
+
+```
+
+
+
+### Closed Vocab Setting
+
+```{r}
+# Create dataset:
+dat_case_human_vs_ai_pooled_closed <- dat_case_human_vs_ai |>
+  filter(vocab == "closed") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_human_vs_ai_pooled_closed
+```
+
+
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_human_vs_ai_pooled_closed  <- dummy_cols(dat_case_human_vs_ai_pooled_closed, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+  select(-c("corpus", "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("corpus_pubmed", "model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_human_vs_ai_pooled_closed
+```
+
+
+
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ ., data = dat_dummified_human_vs_ai_pooled_closed)
+
+# View the summary:
+summary(lm_fit)
+confint(lm_fit)
+``` 
+
+
+### Open Vocab Setting
+
+```{r}
+# Create dataset:
+dat_case_human_vs_ai_pooled_open <- dat_case_human_vs_ai |>
+  filter(vocab == "open") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_human_vs_ai_pooled_open
+```
+
+
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_human_vs_ai_pooled_open  <- dummy_cols(dat_case_human_vs_ai_pooled_open, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+  select(-c("corpus", "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("corpus_pubmed", "model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_human_vs_ai_pooled_open
+```
+
+
+
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ ., data = dat_dummified_human_vs_ai_pooled_open)
+
+# View the summary:
+summary(lm_fit)
+confint(lm_fit)
+``` 
+
+
+## ANOVA Analysis Boxplots
+
+### Open Vocab Setting
+
+```{r}
+# Drop the unnessary column
+dat <- rawdata |>
+  select(-c(file_name, mean, s.d, vocab_size, total_words, alpha, singleton_count, r)) |> # Drop
+  arrange(corpus) |>
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    prompt = factor(prompt, levels = c("none", "zeroshot", "oneshot", "fewshot")),
+    model_name = factor(model_name, levels = c("human", "gptneo", "pythia", "opt")),
+    corpus = factor(corpus, levels = c("pubmed", "book2", "hn", "wiki")),
+    model_size = factor(
+      case_when(
+        model_size %in% c("none") ~ "none",
+        model_size %in% c("70m", "125m", "160m", "350m", "410m") ~ "small",
+        model_size %in% c("1b", "1.3b", "1.4b", "2.7b", "2.8b") ~ "big"
+      ),
+      levels = c("none", "small", "big")
+    ),
+  ) |>
+  filter(vocab == "open") |>
+  select(-c("vocab")) |>
+  bind_rows(dat_case_human_vs_ai_pooled_open |> filter(model_name != "human"))
+  
+dat
+```
+
+
+
+```{r}
+# Edit from here
+my_palette <- c("human" = gg_red, "ai" = gg_green, "gptneo" = gg_blue, "pythia" = gg_orange, "opt" = gg_purple)
+
+x <- which(names(dat) == "model_name") # name of grouping variable
+y <- which(
+  names(dat) == "beta" # names of variables to test
+)
+method1 <- "anova" # one of "anova" or "kruskal.test"
+method2 <- "t.test" # one of "wilcox.test" or "t.test"
+my_comparisons <- list(c("human", "ai"), c("human", "gptneo"), c("human", "pythia"), c("human", "opt")) # comparisons for post-hoc tests
+# Edit until here
+
+# Edit at your own risk
+for (i in y) {
+  for (j in x) {
+    p <- ggboxplot(dat,
+      x = colnames(dat[j]), y = colnames(dat[i]),
+      color = colnames(dat[j]),
+      legend = "none",
+      palette = my_palette,   # use the custom palette
+      add = "jitter"
+    ) +
+    ggtitle("Open vocabulary setting") +
+    xlab("") +
+    ylab("Beta")
+    print(
+      p + stat_compare_means(aes(label = paste0(after_stat(method), ", p-value = ", after_stat(p.format))),
+        method = method1, label.y = max(dat[, i], na.rm = TRUE)
+      )
+      + stat_compare_means(comparisons = my_comparisons, method = method2, label = "p.format") # remove if p-value of ANOVA or Kruskal-Wallis test >= alpha
+    )
+  }
+}
+
+# Save to plot to PDF with transparent background
+library(here)
+ggsave(
+  plot = p + stat_compare_means(aes(label = paste0(after_stat(method), ", p-value = ", after_stat(p.format))),
+        method = method1, label.y = max(dat[, i], na.rm = TRUE)
+      ) +
+      stat_compare_means(comparisons = my_comparisons, method = method2, label = "p.format") + # remove if p-value of ANOVA or Kruskal-Wallis test >= alpha
+      scale_x_discrete(labels = c("human" = "human", "gptneo" = "GPT-Neo", "pythia" = "Pythia", "opt" = "OPT", "ai" = "AI")),
+  filename = here("beta-boxplots-open-vocab.pdf"),
+  device = "pdf",
+  width = 6,
+  height = 6,
+  units = "in",
+  dpi = 320,
+  limitsize = FALSE
+)
+
+```
+
+
+```{r}
+# Edit from here
+my_palette <- c("human" = gg_red, "ai" = gg_green, "gptneo" = gg_blue, "pythia" = gg_orange, "opt" = gg_purple)
+
+x <- which(names(dat) == "model_name") # name of grouping variable
+y <- which(names(dat) == "beta") # names of variables to test
+z <-  which(names(dat) == "corpus") # colors
+method1 <- "anova" # one of "anova" or "kruskal.test"
+method2 <- "t.test" # one of "wilcox.test" or "t.test"
+my_comparisons <- list(c("human", "ai"), c("human", "gptneo"), c("human", "pythia"), c("human", "opt")) # comparisons for post-hoc tests
+# Edit until here
+
+# Edit at your own risk
+for (i in y) {
+  for (j in x) {
+    p <- ggboxplot(dat,
+      x = colnames(dat[j]), y = colnames(dat[i]),
+      #color = colnames(dat[j]),
+      legend = "none",
+      #palette = my_palette,   # use the custom palette
+      #add = "jitter"
+    ) +
+    ggtitle("Open vocabulary setting") +
+    xlab("") +
+    ylab("Beta")
+    print(
+      p + stat_compare_means(aes(label = paste0(after_stat(method), ", p-value = ", after_stat(p.format))),
+        method = method1, label.y = max(dat[, i], na.rm = TRUE)
+      ) +
+      stat_compare_means(comparisons = my_comparisons, method = method2, label = "p.format") +
+      scale_x_discrete(labels = c("human" = "human", "gptneo" = "GPT-Neo", "pythia" = "Pythia", "opt" = "OPT", "ai" = "AI"))
+    )
+  }
+}
+```
+
+
+
+
+
+
+
+### Closed Vocab Setting
+
+```{r}
+# Drop the unnessary column
+dat <- rawdata |>
+  select(-c(file_name, mean, s.d, vocab_size, total_words, alpha, singleton_count, r)) |> # Drop
+  arrange(corpus) |>
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    prompt = factor(prompt, levels = c("none", "zeroshot", "oneshot", "fewshot")),
+    model_name = factor(model_name, levels = c("human", "gptneo", "pythia", "opt")),
+    corpus = factor(corpus, levels = c("pubmed", "book2", "hn", "wiki")),
+    model_size = factor(
+      case_when(
+        model_size %in% c("none") ~ "none",
+        model_size %in% c("70m", "125m", "160m", "350m", "410m") ~ "small",
+        model_size %in% c("1b", "1.3b", "1.4b", "2.7b", "2.8b") ~ "big"
+      ),
+      levels = c("none", "small", "big")
+    ),
+  ) |>
+  filter(vocab == "closed") |>
+  select(-c("vocab")) |>
+  bind_rows(dat_case_human_vs_ai_pooled_closed |> filter(model_name != "human"))
+  
+dat
+```
+
+
+```{r}
+# Edit from here
+my_palette <- c("human" = gg_red, "ai" = gg_green, "gptneo" = gg_blue, "pythia" = gg_orange, "opt" = gg_purple)
+
+x <- which(names(dat) == "model_name") # name of grouping variable
+y <- which(
+  names(dat) == "beta" # names of variables to test
+)
+method1 <- "anova" # one of "anova" or "kruskal.test"
+method2 <- "t.test" # one of "wilcox.test" or "t.test"
+my_comparisons <- list(c("human", "ai"), c("human", "gptneo"), c("human", "pythia"), c("human", "opt")) # comparisons for post-hoc tests
+# Edit until here
+
+# Edit at your own risk
+for (i in y) {
+  for (j in x) {
+    p <- ggboxplot(dat,
+      x = colnames(dat[j]), y = colnames(dat[i]),
+      color = colnames(dat[j]),
+      legend = "none",
+      palette = my_palette,   # use the custom palette
+      add = "jitter"
+    ) +
+    ggtitle("Closed vocabulary setting") +
+    xlab("") +
+    ylab("Beta")
+    print(
+      p + stat_compare_means(aes(label = paste0(after_stat(method), ", p-value = ", after_stat(p.format))),
+        method = method1, label.y = max(dat[, i], na.rm = TRUE)
+      ) +
+      stat_compare_means(comparisons = my_comparisons, method = method2, label = "p.format") + # remove if p-value of ANOVA or Kruskal-Wallis test >= alpha
+      scale_x_discrete(labels = c("human" = "human", "gptneo" = "GPT-Neo", "pythia" = "Pythia", "opt" = "OPT", "ai" = "AI")),
+    )
+  }
+}
+
+# Save to plot to PDF with transparent background
+library(here)
+ggsave(
+  plot = p + stat_compare_means(aes(label = paste0(after_stat(method), ", p-value = ", after_stat(p.format))),
+        method = method1, label.y = max(dat[, i], na.rm = TRUE)
+      ) +
+      stat_compare_means(comparisons = my_comparisons, method = method2, label = "p.format") +
+      scale_x_discrete(labels = c("human" = "human", "gptneo" = "GPTNeo", "pythia" = "Pythia", "opt" = "Opt", "ai" = "AI")),
+  filename = here("beta-boxplots-closed-vocab.pdf"),
+  device = "pdf",
+  width = 6,
+  height = 6,
+  units = "in",
+  dpi = 320,
+  limitsize = FALSE
+)
+```
+
+
+
+
+
+
+
+
+```{r}
+# Drop the unnessary column
+dat <- rawdata |>
+  select(-c(file_name, mean, s.d, vocab_size, total_words, alpha, singleton_count, r)) |> # Drop
+  arrange(corpus) |>
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    prompt = factor(prompt, levels = c("none", "zeroshot", "oneshot", "fewshot")),
+    model_name = factor(model_name, levels = c("human", "gptneo", "pythia", "opt")),
+    corpus = factor(corpus, levels = c("pubmed", "book2", "hn", "wiki")),
+    model_size = factor(
+      case_when(
+        model_size %in% c("none") ~ "none",
+        model_size %in% c("70m", "125m", "160m", "350m", "410m") ~ "small",
+        model_size %in% c("1b", "1.3b", "1.4b", "2.7b", "2.8b") ~ "big"
+      ),
+      levels = c("none", "small", "big")
+    ),
+  ) |>
+  filter(vocab == "closed") |>
+  select(-c("vocab"))
+  
+dat
+```
+
+
+```{r}
+table(dat$corpus)
+```
+
+
+
+```{r}
+# Edit from here
+x <- which(names(dat) == "corpus") # name of grouping variable
+y <- which(
+  names(dat) == "beta" # names of variables to test
+)
+# Edit until here
+
+# Edit at your own risk
+for (i in y) {
+  for (j in x) {
+    p <- ggboxplot(dat,
+      x = colnames(dat[j]), y = colnames(dat[i]),
+      color = colnames(dat[j]),
+      legend = "none",
+      palette = "npg",
+      add = "jitter"
+    ) +
+    ggtitle("Closed vocabulary setting") +
+    xlab("") +
+    ylab("Beta")
+    print(p)
+  }
+}
+```
+
+
+
+
+## Line Chart
+
+### Open and Closed Vocabular Settings
+
+```{r}
+# Custom palette mapping each corpus to a color
+corpus_palette <- c("pubmed" = gg_red,
+                    "hn"     = gg_green,
+                    "wiki"   = gg_blue,
+                    "book2"  = gg_orange)
+
+# Read in your dataset (adjust file path if needed)
+file_path <- "official_dataset_heaps_law_paper-reduced.csv"
+rawdata <- read.csv(file_path, stringsAsFactors = FALSE)
+
+# Define groups
+corpuses <- c("pubmed", "hn", "wiki", "book2")
+models   <- c("human", "gptneo", "pythia", "opt")  # individual models
+vocabs   <- c("open", "closed")
+
+# Aggregate the data: compute average beta for each combination of vocab, corpus, and model.
+agg_data <- expand.grid(vocab = vocabs, corpus = corpuses, model = models, stringsAsFactors = FALSE)
+agg_data$avg_beta <- NA_real_
+
+for(i in seq_len(nrow(agg_data))){
+  subset_data <- subset(rawdata,
+                        corpus == agg_data$corpus[i] &
+                        model_name == agg_data$model[i] &
+                        vocab == agg_data$vocab[i])
+  agg_data$avg_beta[i] <- mean(subset_data$beta, na.rm = TRUE)
+}
+
+# Compute the "AI" average (average of gptneo, pythia, and opt) for each vocab and corpus.
+ai_data <- aggregate(avg_beta ~ vocab + corpus,
+                     data = subset(agg_data, model %in% c("gptneo", "pythia", "opt")),
+                     FUN = mean)
+ai_data$model <- "AI"
+
+# Combine the individual models with the AI average rows.
+new_agg_data <- rbind(agg_data, ai_data)
+
+# Set factor levels for model to control the x-axis order.
+new_agg_data$model <- factor(new_agg_data$model, levels = c("human", "gptneo", "pythia", "opt", "AI"))
+
+# Plotting: Create one plot per vocabulary setting.
+# The x-axis shows the model, and the lines are colored by corpus.
+for(v in vocabs){
+  # Filter data for the current vocabulary setting.
+  plot_data <- subset(new_agg_data, vocab == v)
+  
+  p <- ggplot(plot_data, aes(x = model, y = avg_beta, group = corpus, color = corpus)) +
+    geom_line(size = 1) +
+    scale_color_manual(values = corpus_palette) +
+    labs(
+      title = paste("Average Beta Values (", toupper(substr(v, 1, 1)), substr(v, 2, nchar(v)), " Vocabulary)", sep = ""),
+      x = "Model",
+      y = "Average Beta",
+      color = "Corpus"
+    ) +
+    theme_minimal() +
+      theme(
+        legend.position = c(0.01,0.99),
+        legend.justification = c("left", "top"),
+        legend.text = element_text(size = rel(0.75)),
+        legend.background = element_rect(fill = "gray95", color = NA),
+        plot.margin = unit(c(1, 1, 1, 1), "cm") # Adjust margins here
+      ) 
+      
+  # Save each plot as a PDF file with transparent background.
+  ggsave(
+    filename = here(paste0("avg_beta_", v, "_vocab.pdf")),
+    plot = p,
+    device = "pdf",
+    width = 6,
+    height = 6,
+    bg = "transparent"
+  )
+}
+
+
+```
+
+
+
+
+
