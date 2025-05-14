@@ -1,6 +1,6 @@
-# Heaps-Law-In-LLMs-Paper
+# A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law
 
-[intro]
+This repository contains computer code for reproducing the results described in the manuscript “A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law”.
 
 ## Getting Started
 
@@ -16,7 +16,7 @@ cd heaps-law-llm
 
 ## Running Repository Code
 
-Repository code is written in Python 3.12.4 in Pycharm IDE. 
+Repository code is written in `Python 3.12.4`, you can use any IDE however in this experiment we will use Pycharm. 
 After that we install all of the requirements. 
 
 ```
@@ -33,7 +33,7 @@ Due to the fact that we will emulating Human author text using different LLMs in
 ### Preprocessing [Optional]
 Because our data come from multiple sources, they arrive in different, non‐uniform formats. In this section, I demonstrate how to convert all inputs into a consistent schema, making downstream processing and analysis much easier. You can skip this step if the data you have is already in an uniform format.
 
-Before  running any of the command please put the data you collect in /data/originalData/AllData
+Before  running any of the command please put the data you collect in `/data/originalData/`AllData
 
 ```
 cd /data/originalData/AllData
@@ -56,7 +56,7 @@ python choose_data.py
 ```
 
 #### Create Prompt
-In this section, we are going to create prompt for our experiment based on the data we have selected in /data/originalData/AllData.
+In this section, we are going to create prompt for our experiment based on the data we have selected in `/data/originalData/AllData`.
 Then we run this command to create prompts.
 
 ```
@@ -92,7 +92,7 @@ python cal_data_suf.py
 ```
 
 ## Statistical Analysis
-Multiple regression analysis lie inside the "regression.Rmd" folder in \heaps-law-llm\analysis folder. 
+Multiple regression analysis lie inside the `regression.Rmd` folder in `\heaps-law-llm\analysis` folder. 
 
 ## Figures
 Under the Figures folder, are the code which is written in R we used to create these figures for our paper. 
