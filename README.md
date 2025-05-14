@@ -24,7 +24,7 @@ pip install -r requirements.txt
 ```
 
 ## Data
-Our data are selected from the Pile ([Arxiv preprint](https://arxiv.org/abs/2101.00027)).  If you have any questions or would like further information about the dataset or our methodology, please email us at Paul Sheridan <paul.sheridan.stats@gmail.com>.
+Our data are selected from the Pile ([Arxiv preprint](https://arxiv.org/abs/2101.00027)). If you have any questions or would like further information about the dataset, contact the corresponding author.
 
 ## Text Emulation
 Due to the fact that we will emulating Human author text using different LLMs in a large scale. A pernonal computer will unable to to that task therefore we use Narval from Digital Research Alliance of Canada <https://ccdb.alliancecan.ca/security/login> to conduct these experiment. However, since every supercomputer enforces its own access policies and environment settings, this guide focuses solely on the Python commands you’ll need and does not include any Narval-specific instructions.
