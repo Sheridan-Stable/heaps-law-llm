@@ -1,6 +1,6 @@
 # A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law
 
-This repository contains computer code for reproducing the results described in the manuscript “A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law”.
+This repository contains computer code for reproducing the results described in the manuscript “A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law” (under review with Computational Linguistics).
 
 ## Getting Started
 
