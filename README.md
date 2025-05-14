@@ -101,7 +101,7 @@ Under the Figures folder, are the code which is written in R we used to create t
 If you find anything useful please cite our work using:
 ```
 @misc{Lai2025,
-  author = {Uyen Lai and dylan C. P. Lewis and Paul Sheridan and Gurjit S. Randhawa and Aitazaz A. Farooque},
+  author = {Uyen Lai and Dylan C. P. Lewis and Paul Sheridan and Gurjit S. Randhawa and Aitazaz A. Farooque},
   title = {A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law},
   year = {2025},
   eprint = {arXiv:XXXX.XXXXX}
