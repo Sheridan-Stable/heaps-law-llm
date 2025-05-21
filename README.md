@@ -102,20 +102,26 @@ python cal_data_suf.py
 ## Statistical Analysis
 All code is written in R (version 4.4.2). We’ll use RStudio to run everything.
 We tell our story in two main parts:
+```
 1: Folder `tables` contains our Multiple Regression Analysis
 2: Folder `figures` contains our plots and visualizations
+```
 
 ### Multiple Regression Analysis 
+```
 1: Open the `tables` folder in RStudio
 2: Open the `.Rmd` file for the table you want to produce
 3: Run each code block (they include detailed instructions)
 4: When all chunks finish, your table will appear 
+```
 
 ### Visualizations 
+```
 1: Open the `figures` folder in RStudio
 2: Open the `.Rmd` file for the figure you want to produce
 3: Run each code block (they include detailed instructions)
 4: When all chunks finish, your figure will appear
+```
 
 ## Citation
 If you find anything useful please cite our work using:
