@@ -67,12 +67,14 @@ python create_prompt.py  --datasource 'Path to the data source' --name 'Name for
 After we create the prompt we can process with the text emulation part. 
 We created different file for different LLM due to the fact that they set up differently.
 We can specify each model differently in the parameter:
+```
 --model: Specify which model we want to choose
 --input: The file contain the prompts we want to choose from
 --output: location of the output file
 --start_point: we read the file as an array so the start point will the the specific starting location 
 --end_point: end point 
 --batch: depend on your hardware it will help youy speed up the generating process however if you dont have a GPU card please set it to 1
+```
 
 Here is one way to set them up however we can change it accordingly.
 
