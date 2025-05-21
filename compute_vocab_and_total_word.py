@@ -2,10 +2,12 @@ import pickle
 import random
 import sqlite3
 
+
 class ComputeVocabAndTotalWord:
     def process(self, data):
         """Process the data to compute total words and unique vocab count."""
         raise NotImplementedError("Subclasses must override process()")
+
 
 class NoDBCompute(ComputeVocabAndTotalWord):
     def process(self, data):
@@ -18,10 +20,10 @@ class NoDBCompute(ComputeVocabAndTotalWord):
 
                 overall_total_words += len(word_array)
                 overall_unique_words.update(word_array)
-                newarray.append([overall_total_words,len(overall_unique_words)])
-
+                newarray.append([overall_total_words, len(overall_unique_words)])
 
         return newarray
+
 
 class SQLiteCompute(ComputeVocabAndTotalWord):
     def __init__(self):
@@ -47,6 +49,7 @@ class SQLiteCompute(ComputeVocabAndTotalWord):
     def close(self):
         self.conn.close()
 
+
 class computeVandT:
     def __init__(self, strategy):
         self.strategy = strategy
@@ -57,13 +60,11 @@ class computeVandT:
     def executeStrategy(self, data):
         return self.strategy.process(data)
 
-    def executeOnAnArray(self,data):
-        return  [self.executeStrategy(i) for i in data]
+    def executeOnAnArray(self, data):
+        return [self.executeStrategy(i) for i in data]
 
-    def saveData(self, data: str, name: str ):
+    def saveData(self, data: str, name: str):
         file_path = f'data/heapLawData/{name}.pickle'
         with open(file_path, 'wb') as file:
             pickle.dump(data, file)
         print(f"data have been saved to {file_path} sucessfully")
-
-

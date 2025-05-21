@@ -1,0 +1,136 @@
+---
+title: "Multiple Linear Regression Analysis - Table 7:  LLM versus LLM"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+output: html_notebook
+---
+
+```{r setup, include = FALSE}
+# Specify global settings
+knitr::opts_chunk$set(echo = TRUE)
+
+# Start fresh by clearing R environment
+rm(list = ls())
+```
+
+
+## Load Required Packages (Install if Needed)
+
+```{r}
+# Libraries
+library(tidyverse)
+library(GGally)
+library(fastDummies) # Create dummy variables
+library(plm) # Diagnose linear dependencies in model matrix
+library(ggpubr) # ANOVA boxplots
+library(RColorBrewer)
+library(scales)
+
+# Custom color scheme
+hex <- hue_pal()(3)
+gg_red <- hex[1]
+gg_green <- hex[2]
+gg_blue <- hex[3]
+gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]
+gg_purple <- "#C77CFF"
+```
+
+## Prepare Data
+
+```{r}
+file_path <- "llm_and_human_heapslaw_stats.csv"  # <-- Change if necessary
+rawdata <- read.csv(file_path, stringsAsFactors = FALSE)
+```
+
+## Prepare the dataframe
+
+```{r}
+# Create wrangled data frame:
+dat <- rawdata |>
+  select(-c(file_name, mean, s.d, vocab_size, total_words, alpha, singleton_count, r)) |> #Drop
+  arrange(corpus) |>
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    prompt = factor(prompt, levels = c("none", "zeroshot", "oneshot", "fewshot")),
+    model_name = factor(model_name, levels = c("human", "gptneo", "pythia", "opt")),
+    corpus = factor(corpus, levels = c("pubmed", "book2", "hn", "wiki")),
+    model_size = factor(
+      case_when(
+        model_size %in% c("none") ~ "none",
+        model_size %in% c("70m", "125m", "160m", "350m", "410m") ~ "small",
+        model_size %in% c("1b", "1.3b", "1.4b", "2.7b", "2.8b") ~ "big"
+      ),
+      levels = c("none", "small", "big")
+    ),
+  )
+```
+
+## Muiltiple Regression Analysis
+
+### Closed Vocab Setting
+
+```{r}
+# Create wrangled data frame:
+dat_case_ai_vs_ai_closed <- data_ai_vs_ai |>
+  filter(vocab == "closed") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_ai_vs_ai_closed
+```
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_ai_vs_ai_closed <- dummy_cols(dat_case_ai_vs_ai_closed, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+  select(-c("corpus", "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("corpus_pubmed","model_name_gptneo", "model_size_small", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_ai_vs_ai_closed
+```
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ . +
+               model_name_pythia * model_size_big +
+               model_name_opt * model_size_big,
+             data = dat_dummified_ai_vs_ai_closed)
+
+# View the summary:
+summary(lm_fit)
+```
+
+### Open Vocab Setting
+
+```{r}
+# Create wrangled data frame:
+dat_case_ai_vs_ai_open <- data_ai_vs_ai |>
+  filter(vocab == "open") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_ai_vs_ai_open
+```
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_ai_vs_ai_open <- dummy_cols(dat_case_ai_vs_ai_open, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+  select(-c("corpus", "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("corpus_pubmed","model_name_gptneo", "model_size_small", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_ai_vs_ai_open
+```
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ . +
+               model_name_pythia * model_size_big +
+               model_name_opt * model_size_big,
+             data = dat_dummified_ai_vs_ai_open)
+
+# View the summary:
+summary(lm_fit)
+```
+

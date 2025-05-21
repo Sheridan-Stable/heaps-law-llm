@@ -11,22 +11,22 @@ from multiprocessing import Pool, cpu_count
 from datasets import load_dataset
 import os
 
-
-
 # Ensure WordNet corpus is loaded before threading
 wn.ensure_loaded()
+
 
 class DataProcessing:
     def process(self, data: str):
         pass
 
+
 class OpenVocab(DataProcessing):
     def process(self, data: str):
         return self.split_by_space(
-               self.expand_contractions(
-               self.remove_punctuation(
-               self.remove_non_ascii(
-               self.lower_case(data)))))
+            self.expand_contractions(
+                self.remove_punctuation(
+                    self.remove_non_ascii(
+                        self.lower_case(data)))))
 
     def lower_case(self, data: str):
         return data.lower()
@@ -44,14 +44,15 @@ class OpenVocab(DataProcessing):
     def split_by_space(self, data: str):
         return data.split()
 
+
 class CloseVocab(DataProcessing):
     def process(self, data: str):
         return self.filter_words_in_vocab_database(
-               self.split_by_space(
-               self.expand_contractions(
-               self.remove_punctuation(
-               self.remove_non_ascii(
-               self.lower_case(data))))))
+            self.split_by_space(
+                self.expand_contractions(
+                    self.remove_punctuation(
+                        self.remove_non_ascii(
+                            self.lower_case(data))))))
 
     def lower_case(self, data: str):
         return data.lower()
@@ -62,7 +63,6 @@ class CloseVocab(DataProcessing):
     def remove_punctuation(self, data: str):
         data = re.sub(r'[.\']', '', data)
         return re.sub(r'[^\w\s]|_', ' ', data).strip()
-
 
         return ' '.join(corrected_text)
 
@@ -75,12 +75,13 @@ class CloseVocab(DataProcessing):
     def split_by_space(self, data: str):
         return data.split()
 
+
 class SimpleProcessing(DataProcessing):
     def process(self, data: str):
         return self.split_by_space(
-               self.remove_punctuation(
-               self.remove_non_ascii(
-               self.lower_case(data))))
+            self.remove_punctuation(
+                self.remove_non_ascii(
+                    self.lower_case(data))))
 
     def lower_case(self, data: str):
         return data.lower()
@@ -94,6 +95,7 @@ class SimpleProcessing(DataProcessing):
 
     def split_by_space(self, data: str):
         return data.split(" ")
+
 
 class CleanData:
     def __init__(self, strategy: DataProcessing = None):
@@ -123,6 +125,8 @@ class CleanData:
         with open(file_path, 'w') as file:
             json.dump(data, file)
         print(f"Data has been saved to {file_path} successfully.")
+
+
 def loadData(type):
     if type == 1:
         # Assuming 'load_dataset' is from Hugging Face's datasets library
@@ -135,9 +139,11 @@ def loadData(type):
         with open(args.inputdata, 'r') as json_file:
             data = json.load(json_file)
         # Assuming the JSON data can be converted into a DataFrame directly
-        
+
         df = pd.DataFrame(data, columns=['Entry'])
         return df['Entry']
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument('--datasourse', type=int, default="0", help='choose where is the sourse of data')
@@ -149,10 +155,7 @@ if __name__ == "__main__":
     data = loadData(args.datasourse)
     cleaner = CleanData(OpenVocab())
     clean_data = cleaner.cleanTheArray(data)
-    cleaner.saveData(clean_data,args.name+ "_Open")
+    cleaner.saveData(clean_data, args.name + "_Open")
     cleaner = CleanData(CloseVocab())
     clean_data = cleaner.cleanTheArray(data)
-    cleaner.saveData(clean_data,args.name+ "_Close")
-
-
-
+    cleaner.saveData(clean_data, args.name + "_Close")

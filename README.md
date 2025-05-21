@@ -27,7 +27,7 @@ pip install -r requirements.txt
 Our data are selected from the Pile ([Arxiv preprint](https://arxiv.org/abs/2101.00027)). If you have any questions or would like further information about the dataset, contact the corresponding author.
 
 ## Text Emulation
-Due to the fact that we will emulating Human author text using different LLMs in a large scale. A pernonal computer will unable to to that task therefore we use Narval from [Digital Research Alliance of Canada](https://ccdb.alliancecan.ca/security/login) to conduct these experiment. However, since every supercomputer enforces its own access policies and environment settings, this guide focuses solely on the Python commands you’ll need and does not include any Narval-specific instructions.
+Due to the fact that we will emulating Human author text using different LLMs in a large scale. A pernonal computer will unable to to that task therefore we use Narval with 2 A100 40GB GPU and 100GB RAM from [Digital Research Alliance of Canada](https://ccdb.alliancecan.ca/security/login) to conduct these experiment. However, since every supercomputer enforces its own access policies and environment settings, this guide focuses solely on the Python commands you’ll need and does not include any Narval-specific instructions.
 
 
 ### Preprocessing [Optional]
@@ -66,21 +66,29 @@ python create_prompt.py  --datasource 'Path to the data source' --name 'Name for
 #### Text emulation
 After we create the prompt we can process with the text emulation part. 
 We created different file for different LLM due to the fact that they set up differently.
-We can specify each model differently in the parameter, here is one way to set them up however we can change it accordingly.
+We can specify each model differently in the parameter:
+--model: Specify which model we want to choose
+--input: The file contain the prompts we want to choose from
+--output: location of the output file
+--start_point: we read the file as an array so the start point will the the specific starting location 
+--end_point: end point 
+--batch: depend on your hardware it will help youy speed up the generating process however if you dont have a GPU card please set it to 1
+
+Here is one way to set them up however we can change it accordingly.
 
 For Pythia
 ```
-python Pythia.py  --model "EleutherAI/pythia-160m-deduped" --input "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/prompt/pubmed/few_shot_pubmed.json" --output "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/generatedData/Pubmed-few-shot-pythia-160m" --start_point 0 --end_point 60000 --batch 48
+python Pythia.py  --model "EleutherAI/pythia-160m-deduped" --input "/your-dir/few_shot_pubmed.json" --output "/your-dir/Pubmed-few-shot-pythia-160m" --start_point 0 --end_point 60000 --batch 48
 ```
 
 For GPT-Neo
 ```
-python GPT-Neo.py  --model "EleutherAI/gpt-neo-1.3B" --input "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/prompt/wiki/zero_shot_wiki.json" --output "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/generatedData/wiki-zero-shot-gptneo-1.3B.json" --start_point 0 --end_point 60000  --batch 32
+python GPT-Neo.py  --model "EleutherAI/gpt-neo-1.3B" --input "/your-dir/zero_shot_wiki.json" --output "/your-dir/wiki-zero-shot-gptneo-1.3B.json" --start_point 0 --end_point 60000  --batch 32
 ```
 
 For OPT 
 ```
-python OPT.py  --model "facebook/opt-2.7b" --input "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/prompt/pubmed/few_shot_pubmed.json" --output "/project/def-sheridan/rachel66/Heaps-Law-In-LLMs-Paper/data/generatedData/Pubmed-few-shot-opt-2.7b.json" --start_point 0 --end_point 60000 --batch 20
+python OPT.py  --model "facebook/opt-2.7b" --input "/your-dir/few_shot_pubmed.json" --output "/your-dir/Pubmed-few-shot-opt-2.7b.json" --start_point 0 --end_point 60000 --batch 20
 ```
 
 ## Results
@@ -92,10 +100,22 @@ python cal_data_suf.py
 ```
 
 ## Statistical Analysis
-Multiple regression analysis lie inside the `regression.Rmd` folder in `\heaps-law-llm\analysis` folder. 
+All code is written in R (version 4.4.2). We’ll use RStudio to run everything.
+We tell our story in two main parts:
+1: Folder `tables` contains our Multiple Regression Analysis
+2: Folder `figures` contains our plots and visualizations
 
-## Figures
-Under the Figures folder, are the code which is written in R we used to create these figures for our paper. 
+### Multiple Regression Analysis 
+1: Open the `tables` folder in RStudio
+2: Open the `.Rmd` file for the table you want to produce
+3: Run each code block (they include detailed instructions)
+4: When all chunks finish, your table will appear 
+
+### Visualizations 
+1: Open the `figures` folder in RStudio
+2: Open the `.Rmd` file for the figure you want to produce
+3: Run each code block (they include detailed instructions)
+4: When all chunks finish, your figure will appear
 
 ## Citation
 If you find anything useful please cite our work using:

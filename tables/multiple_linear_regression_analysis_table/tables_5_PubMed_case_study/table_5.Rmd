@@ -1,0 +1,138 @@
+---
+title: "Multiple Linear Regression Analysis - Table 5: PubMed Case study "
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+output: html_notebook
+---
+
+```{r setup, include = FALSE}
+# Specify global settings
+knitr::opts_chunk$set(echo = TRUE)
+
+# Start fresh by clearing R environment
+rm(list = ls())
+```
+
+
+## Load Required Packages (Install if Needed)
+
+```{r}
+# Libraries
+library(tidyverse)
+library(GGally)
+library(fastDummies) # Create dummy variables
+library(plm) # Diagnose linear dependencies in model matrix
+library(ggpubr) # ANOVA boxplots
+library(RColorBrewer)
+library(scales)
+
+# Custom color scheme
+hex <- hue_pal()(3)
+gg_red <- hex[1]
+gg_green <- hex[2]
+gg_blue <- hex[3]
+gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]
+gg_purple <- "#C77CFF"
+```
+
+## Load the data
+
+```{r}
+file_path <- "llm_and_human_heapslaw_stats.csv"  # <-- Change if necessary
+rawdata <- read.csv(file_path, stringsAsFactors = FALSE)
+```
+
+## Prepare the dataframe
+```{r}
+# Create wrangled data frame:
+data_human_vs_ai_pubmed <- rawdata |>
+  select(-c(file_name, mean, s.d, vocab_size, total_words, alpha, singleton_count, r)) |> # Drop
+  filter(model_name %in% c("human", "gptneo")) |> # Corrected filtering condition
+  filter(corpus == "pubmed") |> 
+  select(-c(corpus)) |> # Drop
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    prompt = factor(prompt, levels = c("none", "zeroshot", "oneshot", "fewshot")),
+    model_name = factor(model_name, levels = c("human", "gptneo")),
+    model_size = factor( # Corrected `model_size` assignment
+      case_when(
+        model_size %in% c("none") ~ "none",
+        model_size %in% c("70m", "125m", "160m", "350m", "410m") ~ "small",
+        model_size %in% c("1b", "1.3b", "1.4b", "2.7b", "2.8b") ~ "big"
+      ),
+      levels = c("none", "small", "big") # Moved inside `factor()`
+    ) 
+  )  
+
+  
+data_human_vs_ai_pubmed 
+```
+
+## Muiltiple Regression Analysis
+
+### Closed Vocab Setting
+
+```{r}
+# Create wrangled data frame:
+dat_case_human_vs_ai_pubmed_closed <- data_human_vs_ai_pubmed  |>
+  filter(vocab == "closed") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_human_vs_ai_pubmed_closed
+```
+
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_human_vs_ai_pubmed_closed<- dummy_cols(dat_case_human_vs_ai_pubmed_closed, select_columns = c("model_name", "model_size", "prompt")) |>
+  select(-c( "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_human_vs_ai_pubmed_closed
+```
+
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ ., data = dat_dummified_human_vs_ai_pubmed_closed)
+
+# View the summary:
+summary(lm_fit)
+```
+
+### Open Vocab Setting
+
+```{r}
+# Create wrangled data frame:
+dat_case_human_vs_ai_pubmed_open <- data_human_vs_ai_pubmed  |>
+  filter(vocab == "open") |>
+  select(-c(vocab)) 
+
+# Output to console:
+dat_case_human_vs_ai_pubmed_open
+```
+
+
+```{r}
+# Explicitly re-code the dependent variables as dummy variables:
+dat_dummified_human_vs_ai_pubmed_open<- dummy_cols(dat_case_human_vs_ai_pubmed_open, select_columns = c("model_name", "model_size", "prompt")) |>
+  select(-c( "model_name", "model_size", "prompt")) |>
+  relocate(beta, .after = last_col()) |>
+  select(-c("model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
+
+# Print to console:
+dat_dummified_human_vs_ai_pubmed_open
+```
+
+
+```{r}
+# Fit model:
+lm_fit <- lm(beta ~ ., data = dat_dummified_human_vs_ai_pubmed_open)
+
+# View the summary:
+summary(lm_fit)
+
+
+```

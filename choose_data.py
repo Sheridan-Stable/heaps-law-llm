@@ -1,18 +1,10 @@
 import json
 import random
 import os
+import random
 
 
 def read_json_or_jsonl(file_path):
-    """
-    Reads a JSON or JSONL file and returns the parsed content.
-
-    Args:
-        file_path (str): The path to the JSON or JSONL file.
-
-    Returns:
-        list or dict: Parsed JSON data from the file.
-    """
     if file_path.endswith('.json'):
         with open(file_path, 'r', encoding='utf-8') as file:
             return json.load(file)
@@ -23,20 +15,7 @@ def read_json_or_jsonl(file_path):
         raise ValueError("Unsupported file type. Please provide a '.json' or '.jsonl' file.")
 
 
-import random
-
 def select_random_items(strings, num_items, seed=None):
-    """
-    Randomly selects unique items from a list of strings that have 50 or more words.
-
-    Args:
-        strings (list of str): The list of strings to select from.
-        num_items (int): The number of items to select.
-        seed (int, optional): The random seed for reproducibility.
-
-    Returns:
-        list of str: A list of randomly selected unique items with 50 or more words.
-    """
     if seed is not None:
         random.seed(seed)
 
@@ -51,19 +30,8 @@ def select_random_items(strings, num_items, seed=None):
 
 import random
 
+
 def select_random_items_from_dict(data_dict, num_items, seed=None):
-    """
-    Randomly selects keys from a dictionary and then randomly selects an item from the list associated with each key,
-    ensuring that only items with 50 or more words are selected.
-
-    Args:
-        data_dict (dict): The dictionary where each key is associated with a list of strings.
-        num_items (int): The number of items to select.
-        seed (int, optional): The random seed for reproducibility.
-
-    Returns:
-        dict: A dictionary with selected keys and their corresponding selected strings.
-    """
     if seed is not None:
         random.seed(seed)
 
@@ -95,14 +63,6 @@ def select_random_items_from_dict(data_dict, num_items, seed=None):
 
 
 def process_and_save(file_path, num_items, seed=None):
-    """
-    Reads a JSON or JSONL file, selects random items, and saves the result to a new JSON file.
-
-    Args:
-        file_path (str): The path to the JSON or JSONL file.
-        num_items (int): The number of items to select.
-        seed (int, optional): The random seed for reproducibility.
-    """
     # Read the input file
     data = read_json_or_jsonl(file_path)
 
@@ -113,14 +73,12 @@ def process_and_save(file_path, num_items, seed=None):
         if not isinstance(data, dict):
             raise ValueError("The content of the processedBook3.json file must be a dictionary to select items from.")
 
-
         total_size = 0
-# Iterate through the dictionary and sum the lengths of the lists
+        # Iterate through the dictionary and sum the lengths of the lists
         for key, value in data.items():
             total_size += len(value)
-# Print the total size of the lists
+        # Print the total size of the lists
         print("Total size of all lists in the dictionary:", total_size)
-
 
 
 print("start")

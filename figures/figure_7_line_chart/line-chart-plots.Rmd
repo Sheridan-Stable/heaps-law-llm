@@ -1,0 +1,159 @@
+---
+title: "Mean beta with Standard Deviation Line Charts"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+output: html_notebook
+---
+
+```{r setup, include = FALSE}
+# Specify global settings
+knitr::opts_chunk$set(echo = TRUE)
+
+# Start fresh by clearing R environment
+rm(list = ls())
+```
+
+
+## Load Required Packages (Install if Needed)
+
+```{r}
+# Libraries
+library(tidyverse)
+library(RColorBrewer)
+library(scales)
+library(here)
+
+# Custom color scheme
+hex <- hue_pal()(3)
+gg_red <- hex[1]
+gg_green <- hex[2]
+gg_blue <- hex[3]
+gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]
+gg_purple <- "#C77CFF"
+```
+
+
+
+## Load and Prepare Data
+
+```{r}
+# Load the raw data:
+file_path  <- "official_dataset_heaps_law_paper-reduced.csv"
+rawdata <- read.csv(file_path, stringsAsFactors = FALSE)
+
+```
+
+
+```{r}
+# Create wrangled data frame:
+basic_dat <- rawdata |>
+  select(-c(file_name, mean, s.d, vocab_size, total_words, alpha, singleton_count, r, model_size, prompt)) |> # Drop irrelevant columns
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    model_name = factor(model_name, levels = c("human", "gptneo", "pythia", "opt")),
+    corpus = factor(corpus, levels = c("pubmed", "book2", "hn", "wiki")),
+  )
+
+# Create data frame for pooled AI models:
+ai_dat <- basic_dat |>
+  filter(model_name != "human") |>
+  mutate(
+    model_name = factor(
+      case_when(
+        as.character(model_name) %in% c("gptneo", "pythia", "opt") ~ "ai"
+      )
+    )
+  )
+
+# Merge and sort data frames:
+dat <- basic_dat |>
+  bind_rows(ai_dat) |>
+  arrange(vocab, corpus, model_name)
+
+# Print to console:
+dat
+```
+
+
+
+## Line Charts
+
+### Open and Closed Vocabular Settings
+
+```{r}
+# Custom palette mapping each corpus to a color
+corpus_palette <- c("pubmed" = gg_red,
+                    "hn"     = gg_green,
+                    "wiki"   = gg_blue,
+                    "book2"  = gg_orange)
+
+# Define groups
+corpora <- c("pubmed", "hn", "wiki", "book2")
+models   <- c("human", "gptneo", "pythia", "opt", "ai")  # individual models
+vocabs   <- c("open", "closed")
+
+# Aggregate the data: compute average beta for each combination of vocab, corpus, and model.
+agg_data <- expand.grid(vocab = vocabs, corpus = corpora, model = models, stringsAsFactors = FALSE)
+agg_data$beta_avg <- NA_real_
+agg_data$beta_sd <- NA_real_
+
+for(i in seq_len(nrow(agg_data))){
+  subset_data <- subset(dat,
+                        corpus == agg_data$corpus[i] &
+                        model_name == agg_data$model[i] &
+                        vocab == agg_data$vocab[i])
+  agg_data$beta_avg[i] <- mean(subset_data$beta, na.rm = TRUE)
+  agg_data$beta_sd[i] <- sd(subset_data$beta, na.rm = TRUE)
+}
+
+# Set factor levels for model to control the x-axis order.
+agg_data$model <- factor(agg_data$model, levels = c("human", "ai", "gptneo", "pythia", "opt"))
+```
+
+
+```{r}
+# Plotting: Create one plot per vocabulary setting.
+# The x-axis shows the model, and the lines are colored by corpus.
+for(v in vocabs){
+  # Filter data for the current vocabulary setting.
+  plot_data <- subset(agg_data, vocab == v)
+  
+  p <- ggplot(plot_data, aes(x = model, y = beta_avg, group = corpus, color = corpus)) +
+    geom_line(size = 1) +
+    geom_point(cex = 2) +
+    geom_errorbar(aes(ymin = beta_avg - 0.25 * beta_sd, ymax = beta_avg + 0.25 * beta_sd), width = 0.5, position = position_dodge(0.05)) +
+    scale_color_manual(values = corpus_palette,
+      breaks = c("wiki", "pubmed", "hn", "book2"),
+    labels = c("Wiki", "Pubmed", "Hacker News", "Book2")
+                       ) +
+    labs(
+      title = paste(toupper(substr(v, 1, 1)), substr(v, 2, nchar(v)), " vocabulary setting", sep = ""),
+      x = "",
+      y = "Mean beta",
+      color = "Corpus"
+    ) +
+    scale_x_discrete(labels = c("human" = "Human", "ai" = "LLM", "gptneo" = "GPT-Neo", "pythia" = "Pythia", "opt" = "OPT")) +
+    theme_minimal() +
+      theme(
+        legend.position = c(0.01, 0.99),
+        legend.justification = c("left", "top"),
+        legend.text = element_text(size = rel(0.75)),
+        legend.background = element_rect(fill = "gray95", color = NA),
+        plot.margin = unit(c(1, 1, 1, 1), "cm") # Adjust margins here
+      ) 
+      
+  # Save each plot as a PDF file with transparent background.
+  ggsave(
+    filename = here(paste0("mean-beta-", v, "-vocab.png")),
+    plot = p,
+    device = "png",
+    width = 6,
+    height = 6,
+    bg = "transparent"
+  )
+}
+```
+
+
+
+
+
