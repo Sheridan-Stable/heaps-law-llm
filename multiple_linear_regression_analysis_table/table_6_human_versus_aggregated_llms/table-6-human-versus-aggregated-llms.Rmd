@@ -1,9 +1,8 @@
 ---
-title: "Multiple Linear Regression Analysis - Table 7:  LLM versus LLM"
+title: "Multiple Linear Regression Analysis - Table 6:  Human versus Aggregated LLMs"
 author: "Uyen 'Rachel' Lai and Paul Sheridan"
 output: html_notebook
 ---
-
 ```{r setup, include = FALSE}
 # Specify global settings
 knitr::opts_chunk$set(echo = TRUE)
@@ -37,7 +36,7 @@ gg_purple <- "#C77CFF"
 ## Prepare Data
 
 ```{r}
-file_path <- "../data/llm_and_human_heapslaw_stats.csv"  # <-- Change if necessary
+file_path  <- "../../data/llm_and_human_heapslaw_stats.csv"
 rawdata <- read.csv(file_path, stringsAsFactors = FALSE)
 ```
 
@@ -64,73 +63,94 @@ dat <- rawdata |>
   )
 ```
 
+
+```{r}
+dat_case_human_vs_ai <- dat |>
+  mutate(
+    model_name = factor(
+      case_when(
+        as.character(model_name) %in% c("opt", "pythia", "gptneo") ~ "ai",
+        as.character(model_name) == "human" ~ "human"
+      ),
+      levels = c("human", "ai") # Correct placement of levels
+    )
+  )
+
+# Print to console:
+dat_case_human_vs_ai
+
+```
+
 ## Muiltiple Regression Analysis
 
 ### Closed Vocab Setting
 
 ```{r}
-# Create wrangled data frame:
-dat_case_ai_vs_ai_closed <- data_ai_vs_ai |>
+# Create dataset:
+dat_case_human_vs_ai_pooled_closed <- dat_case_human_vs_ai |>
   filter(vocab == "closed") |>
   select(-c(vocab)) 
 
 # Output to console:
-dat_case_ai_vs_ai_closed
+dat_case_human_vs_ai_pooled_closed
 ```
 
 ```{r}
 # Explicitly re-code the dependent variables as dummy variables:
-dat_dummified_ai_vs_ai_closed <- dummy_cols(dat_case_ai_vs_ai_closed, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+dat_dummified_human_vs_ai_pooled_closed  <- dummy_cols(dat_case_human_vs_ai_pooled_closed, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
   select(-c("corpus", "model_name", "model_size", "prompt")) |>
   relocate(beta, .after = last_col()) |>
-  select(-c("corpus_pubmed","model_name_gptneo", "model_size_small", "prompt_zeroshot"))
+  select(-c("corpus_pubmed", "model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
 
 # Print to console:
-dat_dummified_ai_vs_ai_closed
+dat_dummified_human_vs_ai_pooled_closed
 ```
 
 ```{r}
 # Fit model:
-lm_fit <- lm(beta ~ . +
-               model_name_pythia * model_size_big +
-               model_name_opt * model_size_big,
-             data = dat_dummified_ai_vs_ai_closed)
+lm_fit <- lm(beta ~ ., data = dat_dummified_human_vs_ai_pooled_closed)
 
 # View the summary:
 summary(lm_fit)
-```
+confint(lm_fit)
+``` 
 
 ### Open Vocab Setting
 
 ```{r}
-# Create wrangled data frame:
-dat_case_ai_vs_ai_open <- data_ai_vs_ai |>
+# Create dataset:
+dat_case_human_vs_ai_pooled_open <- dat_case_human_vs_ai |>
   filter(vocab == "open") |>
   select(-c(vocab)) 
 
 # Output to console:
-dat_case_ai_vs_ai_open
+dat_case_human_vs_ai_pooled_open
 ```
 
 ```{r}
 # Explicitly re-code the dependent variables as dummy variables:
-dat_dummified_ai_vs_ai_open <- dummy_cols(dat_case_ai_vs_ai_open, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
+dat_dummified_human_vs_ai_pooled_open  <- dummy_cols(dat_case_human_vs_ai_pooled_open, select_columns = c("corpus", "model_name", "model_size", "prompt")) |>
   select(-c("corpus", "model_name", "model_size", "prompt")) |>
   relocate(beta, .after = last_col()) |>
-  select(-c("corpus_pubmed","model_name_gptneo", "model_size_small", "prompt_zeroshot"))
+  select(-c("corpus_pubmed", "model_name_human", "model_size_none", "model_size_small", "prompt_none", "prompt_zeroshot"))
 
 # Print to console:
-dat_dummified_ai_vs_ai_open
+dat_dummified_human_vs_ai_pooled_open
 ```
 
 ```{r}
 # Fit model:
-lm_fit <- lm(beta ~ . +
-               model_name_pythia * model_size_big +
-               model_name_opt * model_size_big,
-             data = dat_dummified_ai_vs_ai_open)
+lm_fit <- lm(beta ~ ., data = dat_dummified_human_vs_ai_pooled_open)
 
 # View the summary:
 summary(lm_fit)
-```
+confint(lm_fit)
+``` 
+
+
+
+
+
+
+
 

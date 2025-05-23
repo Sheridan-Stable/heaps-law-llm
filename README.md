@@ -48,13 +48,13 @@ Before  running any of the command please put the data you collect in `/text_emu
 
 ```
 cd /text_emulation/original_data/all_data
-python data_combination.py
+python data-combination.py
 ```
 
 This command is going to give you basic statistic about the data (eg: number of documents, Average length)
 
 ```
-python data_analysis.py
+python data-analysis.py
 ```
 
 ### Emulation
@@ -63,7 +63,7 @@ python data_analysis.py
 Due to the fact that in this experiment, we only use a subset of our data. Therefore we are going to randomize and take a subset which is 240000 documents per dataset.  
 
 ```
-python choose_data.py
+python choose-data.py
 ```
 
 #### Create Prompt
@@ -71,7 +71,7 @@ In this section, we are going to create prompt for our experiment based on the d
 Then we run this command to create prompts.
 
 ```
-python create_prompt.py  --datasource 'Path to the data source' --name 'Name for the output file' --document_type  'Command to generate prompts'
+python create-prompt.py  --datasource 'Path to the data source' --name 'Name for the output file' --document_type  'Command to generate prompts'
 ```
 
 #### Text emulation
@@ -91,30 +91,30 @@ Here is one way to set them up however we can change it accordingly.
 
 For Pythia
 ```
-python Pythia.py  --model "EleutherAI/pythia-160m-deduped" --input "/your-dir/few_shot_pubmed.json" --output "/your-dir/Pubmed-few-shot-pythia-160m" --start_point 0 --end_point 60000 --batch 48
+python pythia.py  --model "EleutherAI/pythia-160m-deduped" --input "/your-dir/few_shot_pubmed.json" --output "/your-dir/Pubmed-few-shot-pythia-160m" --start_point 0 --end_point 60000 --batch 48
 ```
 
 For GPT-Neo
 ```
-python GPT-Neo.py  --model "EleutherAI/gpt-neo-1.3B" --input "/your-dir/zero_shot_wiki.json" --output "/your-dir/wiki-zero-shot-gptneo-1.3B.json" --start_point 0 --end_point 60000  --batch 32
+python gpt-neo.py  --model "EleutherAI/gpt-neo-1.3B" --input "/your-dir/zero_shot_wiki.json" --output "/your-dir/wiki-zero-shot-gptneo-1.3B.json" --start_point 0 --end_point 60000  --batch 32
 ```
 
 For OPT 
 ```
-python OPT.py  --model "facebook/opt-2.7b" --input "/your-dir/few_shot_pubmed.json" --output "/your-dir/Pubmed-few-shot-opt-2.7b.json" --start_point 0 --end_point 60000 --batch 20
+python opt.py  --model "facebook/opt-2.7b" --input "/your-dir/few_shot_pubmed.json" --output "/your-dir/Pubmed-few-shot-opt-2.7b.json" --start_point 0 --end_point 60000 --batch 20
 ```
 
 ## Results
 After we are done with the text emulation, we run this script to get all of the required stat 
 ```
 cd \heaps-law-llm\text_emulation\generatedData
-python cal_data_suf.py
+python cal-data-suf.py
 ```
 
 For the PCA we need a different type of data, we run
 ```
 cd \heaps-law-llm\text_emulation\generated_data
-python cal_data_pca_suf.py
+python cal-data-pca-suf.py
 ```
 ## Statistical Analysis
 All code is written in R (version 4.4.2). We’ll use RStudio to run everything.

@@ -1,3 +1,11 @@
+---
+title: "PCA plot"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+output: html_notebook
+---
+
+
+
 ```{r setup, include = FALSE}
 # Specify global settings
 knitr::opts_chunk$set(echo = TRUE)
@@ -31,7 +39,7 @@ gg_purple <- "#C77CFF"
 
 ```{r}
 # Load the raw data:
-file_path  <- "heap_law_data_fix_rachel.csv"
+file_path <- "../../data/" <--- please fill in the name
 df_llm <- read.csv(file_path, stringsAsFactors = FALSE)
 
 ```

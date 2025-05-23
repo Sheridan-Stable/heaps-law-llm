@@ -5,7 +5,6 @@ output: html_notebook
 ---
 
 # Preliminaries
-
 ```{r}
 # Delete all variables initialized in R session, if any
 rm(list = ls())
@@ -41,7 +40,7 @@ gg_purple <- "#C77CFF"
 ```
 
 
-
+## Define Heaps' law
 ```{r}
 # Heaps' law
 heaps_law <- function(x, alpha, beta) {
@@ -62,6 +61,7 @@ COLORS <- c(
 # Open vocabulary setting
 
 ```{r}
+# this is hard code value that take from file_path  llm_and_human_heapslaw_stats.csv
 # Hard code estimate alpha and beta values
 
 # PubMed Abstracts
@@ -95,8 +95,8 @@ V_max <- max(vocab_size, vocab_size1, vocab_size2, vocab_size3) * 1.1
 
 
 
-
 ```{r}
+# create each data frame
 # Create data frame for Heaps' law curves
 heaps_data <- rbind(
   data.frame(

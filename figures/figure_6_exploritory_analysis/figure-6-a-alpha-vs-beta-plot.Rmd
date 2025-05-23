@@ -1,5 +1,5 @@
 ---
-title: "T-tests with Boxplots"
+title: "Alpha vs Beta plot"
 author: "Uyen 'Rachel' Lai and Paul Sheridan"
 output: html_notebook
 ---
@@ -39,10 +39,7 @@ my_palette <- c("human" = gg_red, "ai" = gg_green, "gptneo" = gg_blue, "pythia" 
 
 ```{r}
 # Load the raw data:
-
-
-
-file_path <- "official_dataset_heaps_law_paper-reduced.csv"
+file_path  <- "../../data/llm_and_human_heapslaw_stats.csv"
 rawdata  <- read.csv(file_path, stringsAsFactors = FALSE)
 ```
 
@@ -53,9 +50,7 @@ rawdata
 ```
 
 ```{r}
-# ----------------------------------------------------
-# 1. Load Required Libraries
-# ----------------------------------------------------
+# Load Required Libraries
 # install.packages(c("ggplot2", "scales", "here"))
 library(ggplot2)
 library(scales)
@@ -83,9 +78,7 @@ my_palette <- c(
   "closed" = gg_blue
 )
 
-# ----------------------------------------------------
-# 4. Plot: x = alpha, y = beta, color by vocab
-# ----------------------------------------------------
+# Plot: x = alpha, y = beta, color by vocab
 p <- ggplot(rawdata, aes(x = alpha, y = beta, color = vocab)) +
   geom_point(size = 3) +
   scale_color_manual(values = my_palette, labels = c("Open", "Closed")) +
@@ -102,9 +95,7 @@ p <- ggplot(rawdata, aes(x = alpha, y = beta, color = vocab)) +
     plot.margin          = unit(c(1, 1, 1, 1), "cm")
   )
 
-# ----------------------------------------------------
-# 5. Print or Save the Plot
-# ----------------------------------------------------
+# Print or Save the Plot
 # Display the plot
 print(p)
 
@@ -119,10 +110,5 @@ ggsave(
 )
 
 ```
-```{r}
-
-
-```
-
 
 
