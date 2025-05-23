@@ -5,6 +5,7 @@ import json
 import random
 import pickle
 from tqdm import tqdm
+import pandas as pd
 
 def process_json(file_path):
     # Load JSON data
@@ -85,6 +86,8 @@ def main():
     # Save the final result as a pickle file
     with open("heap_law_data_fix.pkl", "wb") as pkl_file:
         pickle.dump(result, pkl_file)
+    df.to_csv("../../data/llm-and-human-heapslaw-stats-pca.csv", index=False)
+
 
 if __name__ == '__main__':
     main()

@@ -42,7 +42,7 @@ my_palette <- c("human" = gg_red, "llm" = gg_green, "gptneo" = gg_blue, "pythia"
 
 ```{r}
 # Load the raw data:
-file_path  <- "../../data/llm_and_human_heapslaw_stats.csv"
+file_path  <- "../../data/llm-and-human-heapslaw-stats.csv"
 rawdata <- read.csv(file_path, stringsAsFactors = FALSE)
 ```
 

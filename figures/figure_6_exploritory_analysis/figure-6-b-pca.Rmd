@@ -39,7 +39,7 @@ gg_purple <- "#C77CFF"
 
 ```{r}
 # Load the raw data:
-file_path <- "../../data/" <--- please fill in the name
+file_path <- "../../data/llm-and-human-heapslaw-stats-pca.csv" <--- please fill in the name
 df_llm <- read.csv(file_path, stringsAsFactors = FALSE)
 
 ```

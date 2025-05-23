@@ -36,7 +36,7 @@ gg_purple <- "#C77CFF"
 ## Prepare Data
 
 ```{r}
-file_path  <- "../../data/llm_and_human_heapslaw_stats.csv"
+file_path  <- "../../data/llm-and-human-heapslaw-stats.csv"
 rawdata <- read.csv(file_path, stringsAsFactors = FALSE)
 ```
 
