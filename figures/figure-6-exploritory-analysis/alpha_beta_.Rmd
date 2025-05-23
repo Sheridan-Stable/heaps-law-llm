@@ -39,6 +39,9 @@ my_palette <- c("human" = gg_red, "ai" = gg_green, "gptneo" = gg_blue, "pythia" 
 
 ```{r}
 # Load the raw data:
+
+
+
 file_path <- "official_dataset_heaps_law_paper-reduced.csv"
 rawdata  <- read.csv(file_path, stringsAsFactors = FALSE)
 ```
@@ -114,6 +117,10 @@ ggsave(
   height   = 6,
   bg       = "transparent"
 )
+
+```
+```{r}
+
 
 ```
 

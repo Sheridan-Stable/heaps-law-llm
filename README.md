@@ -24,7 +24,18 @@ pip install -r requirements.txt
 ```
 
 ## Data
-Our data are selected from the Pile ([Arxiv preprint](https://arxiv.org/abs/2101.00027)). If you have any questions or would like further information about the dataset, contact the corresponding author.
+Our data are selected from the Pile ([Arxiv preprint](https://arxiv.org/abs/2101.00027)). However, since the pile is no longer supported, we collect from different sourses:
+
+PubMed:https://www.kaggle.com/datasets/bonhart/pubmed-abstracts
+For Wikipidia we download with the provided script:
+```
+git clone https://github.com/noanabeshima/wikipedia-downloader.git
+pip install -r requirements.txt
+python main.py
+```
+After download the data, we put it under `heaps-law-llm\text_emulation\processing_data\original_data\all_data`
+
+For the rest of our used dataset (Hacker News and Books2 Corpus), please contact the corresponding author for more information
 
 ## Text Emulation
 Due to the fact that we will emulating Human author text using different LLMs in a large scale. A pernonal computer will unable to to that task therefore we use Narval with 2 A100 40GB GPU and 100GB RAM from [Digital Research Alliance of Canada](https://ccdb.alliancecan.ca/security/login) to conduct these experiment. However, since every supercomputer enforces its own access policies and environment settings, this guide focuses solely on the Python commands you’ll need and does not include any Narval-specific instructions.
@@ -33,10 +44,10 @@ Due to the fact that we will emulating Human author text using different LLMs in
 ### Preprocessing [Optional]
 Because our data come from multiple sources, they arrive in different, non‐uniform formats. In this section, I demonstrate how to convert all inputs into a consistent schema, making downstream processing and analysis much easier. You can skip this step if the data you have is already in an uniform format.
 
-Before  running any of the command please put the data you collect in `/data/originalData/`AllData
+Before  running any of the command please put the data you collect in `/text_emulation/original_data/all_data`
 
 ```
-cd /data/originalData/AllData
+cd /text_emulation/original_data/all_data
 python data_combination.py
 ```
 
@@ -56,7 +67,7 @@ python choose_data.py
 ```
 
 #### Create Prompt
-In this section, we are going to create prompt for our experiment based on the data we have selected in `/data/originalData/AllData`.
+In this section, we are going to create prompt for our experiment based on the data we have selected in `/data/text_emulation/all_data`.
 Then we run this command to create prompts.
 
 ```
@@ -95,12 +106,16 @@ python OPT.py  --model "facebook/opt-2.7b" --input "/your-dir/few_shot_pubmed.js
 
 ## Results
 After we are done with the text emulation, we run this script to get all of the required stat 
-
 ```
-cd \heaps-law-llm\data\generatedData
+cd \heaps-law-llm\text_emulation\generatedData
 python cal_data_suf.py
 ```
 
+For the PCA we need a different type of data, we run
+```
+cd \heaps-law-llm\text_emulation\generated_data
+python cal_data_pca_suf.py
+```
 ## Statistical Analysis
 All code is written in R (version 4.4.2). We’ll use RStudio to run everything.
 We tell our story in two main parts:

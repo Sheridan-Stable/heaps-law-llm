@@ -27,7 +27,7 @@ gg_purple <- "#C77CFF"
 
 
 
-## Load Data
+## Load and Prepare Data
 
 ```{r}
 # Load the raw data:
@@ -36,7 +36,6 @@ df_llm <- read.csv(file_path, stringsAsFactors = FALSE)
 
 ```
 
-## Prepare Data
 ```{r}
 # Optional: Show the first 10 rows and first 10 columns
 head(df_llm[, 1:10], 10)
@@ -91,7 +90,6 @@ df_plot <- data.frame(
 
 ```
 
-## Generate Plot
 ```{r}
 # ----------------------------
 # 8. Define your custom colors
