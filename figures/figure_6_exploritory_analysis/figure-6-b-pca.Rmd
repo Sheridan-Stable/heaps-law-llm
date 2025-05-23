@@ -93,35 +93,11 @@ df_plot <- data.frame(
   PC2 = X_pca_2[, 2],
   Label = labels
 )
-
-
-
 ```
 
+#Plot the PCA
 ```{r}
-# ----------------------------
-# 8. Define your custom colors
-#    (You specified 3 'hue_pal' colors, plus an orange & a purple)
-# ----------------------------
-hex <- hue_pal()(3)
-gg_red    <- hex[1]
-gg_green  <- hex[2]
-gg_blue   <- hex[3]
-gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]  # from "PuOr" palette
-gg_purple <- "#C77CFF"
-
-# If you have only four categories (wiki, pubmed, hn, book2):
-color_map <- c(
-  "wiki"   = gg_red,
-  "pubmed" = gg_green,
-  "hn"     = gg_blue,
-  "book2"  = gg_orange
-)
-
-# ----------------------------
-# 9. Plot the PCA in 2D with your custom color scheme
-#    Capitalize the first letter in the legend labels
-# ----------------------------
+# Plot the PCA in 2D with your custom color scheme
 p <- ggplot(df_plot, aes(x = PC1, y = PC2, color = Label)) +
   geom_point() +
   scale_color_manual(
@@ -150,7 +126,4 @@ ggsave(
   height   = 6,
   bg       = "transparent"
 )
-
-
-
 ```

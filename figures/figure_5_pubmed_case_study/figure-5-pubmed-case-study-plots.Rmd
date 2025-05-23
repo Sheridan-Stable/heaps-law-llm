@@ -39,8 +39,7 @@ gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]
 gg_purple <- "#C77CFF"
 ```
 
-
-## Define Heaps' law
+# Define Heaps' law
 ```{r}
 # Heaps' law
 heaps_law <- function(x, alpha, beta) {
@@ -59,7 +58,6 @@ COLORS <- c(
 
 
 # Open vocabulary setting
-
 ```{r}
 # this is hard code value that take from file_path  llm_and_human_heapslaw_stats.csv
 # Hard code estimate alpha and beta values
@@ -94,7 +92,7 @@ V_max <- max(vocab_size, vocab_size1, vocab_size2, vocab_size3) * 1.1
 ```
 
 
-
+# create dataframe
 ```{r}
 # create each data frame
 # Create data frame for Heaps' law curves
@@ -126,7 +124,7 @@ heaps_data$corpus <- factor(heaps_data$corpus, levels = names(COLORS))
 ```
 
 
-
+# Plot
 ```{r}
 # Generate plot
 p <- ggplot(

@@ -35,14 +35,12 @@ gg_purple <- "#C77CFF"
 ```
 
 ## Prepare Data
-
 ```{r}
 file_path  <- "../../data/git "
 rawdata <- read.csv(file_path, stringsAsFactors = FALSE)
 ```
 
 ## Prepare the dataframe
-
 ```{r}
 # Create wrangled data frame:
 dat <- rawdata |>
@@ -65,9 +63,7 @@ dat <- rawdata |>
 ```
 
 ## Muiltiple Regression Analysis
-
 ### Closed Vocab Setting
-
 ```{r}
 # Create wrangled data frame:
 dat_case_ai_vs_ai_closed <- data_ai_vs_ai |>
