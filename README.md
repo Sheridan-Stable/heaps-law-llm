@@ -1,6 +1,6 @@
 # A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law
 
-This repository contains computer code for reproducing the results described in the manuscript “A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law” (under review with Computational Linguistics).
+This repository contains computer code for reproducing the results described in the manuscript “A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law” (under review with [Computational Linguistics](https://direct.mit.edu/coli)).
 
 ## Getting Started
 
@@ -8,75 +8,49 @@ Clone this repository by running the command
 ```
 git clone https://github.com/Sheridan-Stable/heaps-law-llm.git
 ```
+and `cd` into the repository root folder `heaps-law-llm`.
 
-and `cd` into the repository root folder "heaps-law-llm".
-```
-cd heaps-law-llm
-```
+## Human-Written Text
 
-## Running Repository Code
-
-Repository code is written in `Python 3.12.4`, you can use any IDE however in this experiment we will use Pycharm. 
-After that we install all of the requirements. 
-
-```
-pip install -r requirements.txt
-```
-
-## Data
-Our data are selected from the Pile ([Arxiv preprint](https://arxiv.org/abs/2101.00027)). However, since the pile is no longer supported, we collect from different sourses:
-
-PubMed:https://www.kaggle.com/datasets/bonhart/pubmed-abstracts
-For Wikipidia we download with the provided script:
-```
-git clone https://github.com/noanabeshima/wikipedia-downloader.git
-pip install -r requirements.txt
-python main.py
-```
-After download the data, we put it under `heaps-law-llm\text-emulation\processing-data\original-data\all-data`
-
-For the rest of our used dataset (Hacker News and Books2 Corpus), please contact the corresponding author for more information
+We selected corpora from the Pile ([Arxiv preprint](https://arxiv.org/abs/2101.00027)) for emulation: Wikipedia, PubMed Abstracts, BookCorpus2, and Hacker News. As the Pile is no longer supported, feel free to contact the corresponding author for more information on obtaining the corpora. After obtaining the corpora, save them in the folder `heaps-law-llm\text-emulation\processing-data\original-data\all-data`.
 
 ## Text Emulation
-Due to the fact that we will emulating Human author text using different LLMs in a large scale. A pernonal computer will unable to to that task therefore we use Narval with 2 A100 40GB GPU and 100GB RAM from [Digital Research Alliance of Canada](https://ccdb.alliancecan.ca/security/login) to conduct these experiment. However, since every supercomputer enforces its own access policies and environment settings, this guide focuses solely on the Python commands you’ll need and does not include any Narval-specific instructions.
 
-
-### Preprocessing [Optional]
-Because our data come from multiple sources, they arrive in different, non‐uniform formats. In this section, I demonstrate how to convert all inputs into a consistent schema, making downstream processing and analysis much easier. You can skip this step if the data you have is already in an uniform format.
-
-Before  running any of the command please put the data you collect in `/text-emulation/original-data/all-data`
-
+Text emulation code is written in `Python 3.12.4`.  Run the following command to install all of the required libraries: 
 ```
-cd /text-emulation/original-data/all-data
+pip install -r requirements.txt
+```
+We used Narval with 2 A100 40GB GPU and 100GB RAM from [Digital Research Alliance of Canada](https://ccdb.alliancecan.ca/security/login) to emulate human-authored text using different LLMs on a large scale. However, since every system enforces its own access policies and environment settings, this guide focuses solely on the Python commands you’ll need and does not include any Narval-specific instructions.
+
+### Preprocessing
+
+The raw human-written text that we used was subject to nonuniform formats. To convert all textual data into a consistent schema, `cd` into the `/text-emulation/original-data/all-data` folder and run the command:
+```
 python data-combination.py
 ```
 
-This command is going to give you basic statistic about the data (eg: number of documents, Average length)
-
+This command is will give basic statistic about each corpus (e.g.,: number of documents, and average document length):
 ```
 python data-analysis.py
 ```
 
-### Emulation
+### Data Selection
 
-#### Data Selection
-Due to the fact that in this experiment, we only use a subset of our data. Therefore we are going to randomize and take a subset which is 240000 documents per dataset.  
-
+We only use a subset of corpus documents in our experiments. Run this command to randomly select a subset of 240,000 documents from each corpus:
 ```
 python choose-data.py
 ```
 
-#### Create Prompt
-In this section, we are going to create prompt for our experiment based on the data we have selected in `/data/text-emulation/all-data`.
-Then we run this command to create prompts.
+### Prompt Creation
 
+To create prompts for our experiment based on the data we have selected in `/data/text-emulation/all-data`, run the command:
 ```
 python create-prompt.py  --datasource 'Path to the data source' --name 'Name for the output file' --document-type  'Command to generate prompts'
 ```
 
-#### Text emulation
-After we create the prompt we can process with the text emulation part. 
-We created different file for different LLM due to the fact that they set up differently.
+### Emulation
+
+After creating the prompts we can proceed with the text emulation. We created different file for different LLM due to the fact that they set up differently.
 We can specify each model differently in the parameter:
 ```
 --model: Specify which model we want to choose
@@ -89,58 +63,64 @@ We can specify each model differently in the parameter:
 
 Here is one way to set them up however we can change it accordingly.
 
-For Pythia
+For Pythia:
 ```
 python pythia.py  --model "EleutherAI/pythia-160m-deduped" --input "/your-dir/few_shot_pubmed.json" --output "/your-dir/Pubmed-few-shot-pythia-160m" --start_point 0 --end_point 60000 --batch 48
 ```
 
-For GPT-Neo
+For GPT-Neo:
 ```
 python gpt-neo.py  --model "EleutherAI/gpt-neo-1.3B" --input "/your-dir/zero_shot_wiki.json" --output "/your-dir/wiki-zero-shot-gptneo-1.3B.json" --start_point 0 --end_point 60000  --batch 32
 ```
 
-For OPT 
+For OPT:
 ```
 python opt.py  --model "facebook/opt-2.7b" --input "/your-dir/few_shot_pubmed.json" --output "/your-dir/Pubmed-few-shot-opt-2.7b.json" --start_point 0 --end_point 60000 --batch 20
 ```
 
-## Results
-After we are done with the text emulation, we run this script to get all of the required stat 
+### Calculation of Basic Numerical Statistics 
+
+After emulating the text, `cd` into the `\heaps-law-llm\text-emulation\generated-data` folder and run this script to some statistics required for our various numerical analyses:
 ```
-cd \heaps-law-llm\text-emulation\generated-data
 python cal-data-suf.py
 ```
 
-For the PCA we need a different type of data, we run
+For the PCA we need a different type of data. To obtain it, `cd` into the `cd \heaps-law-llm\text-emulation\generated-data` folder and run the command:
 ```
-cd \heaps-law-llm\text-emulation\generated-data
 python cal-data-pca-suf.py
 ```
-## Statistical Analysis
-All code is written in R (version 4.4.2). We’ll use RStudio to run everything.
+
+### Statistical Analysis
+
+All code is written in R (version `4.4.2`). We’ll use RStudio to run everything.
 We tell our story in two main parts:
 ```
 1: Folder `tables` contains our Multiple Regression Analysis
 2: Folder `figures` contains our plots and visualizations
 ```
 
-### Multiple Regression Analysis 
+### Multiple Regression Analysis Tables
+
+Here is a general procedure for reproducing the multiple linear regression analysis tables:
 ```
-1: Open the `tables` folder in RStudio
+1: Navigate to the `tables` subfolder of interest
 2: Open the `.Rmd` file for the table you want to produce
 3: Run each code block (they include detailed instructions)
 4: When all chunks finish, your table will appear 
 ```
 
-### Visualizations 
+### Figures
+
+Here is a general procedure for reproducing selected manuscript figures:
 ```
-1: Open the `figures` folder in RStudio
+1: Navigate to the `figures` subfolder of interest
 2: Open the `.Rmd` file for the figure you want to produce
 3: Run each code block (they include detailed instructions)
 4: When all chunks finish, your figure will appear
 ```
 
 ## Citation
+
 If you find anything useful please cite our work using:
 ```
 @misc{Lai2025,
