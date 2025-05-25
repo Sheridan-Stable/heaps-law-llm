@@ -33,7 +33,7 @@ git clone https://github.com/noanabeshima/wikipedia-downloader.git
 pip install -r requirements.txt
 python main.py
 ```
-After download the data, we put it under `heaps-law-llm\text_emulation\processing_data\original_data\all_data`
+After download the data, we put it under `heaps-law-llm\text-emulation\processing-data\original-data\all-data`
 
 For the rest of our used dataset (Hacker News and Books2 Corpus), please contact the corresponding author for more information
 
@@ -44,10 +44,10 @@ Due to the fact that we will emulating Human author text using different LLMs in
 ### Preprocessing [Optional]
 Because our data come from multiple sources, they arrive in different, non‐uniform formats. In this section, I demonstrate how to convert all inputs into a consistent schema, making downstream processing and analysis much easier. You can skip this step if the data you have is already in an uniform format.
 
-Before  running any of the command please put the data you collect in `/text_emulation/original_data/all_data`
+Before  running any of the command please put the data you collect in `/text-emulation/original-data/all-data`
 
 ```
-cd /text_emulation/original_data/all_data
+cd /text-emulation/original-data/all-data
 python data-combination.py
 ```
 
@@ -67,11 +67,11 @@ python choose-data.py
 ```
 
 #### Create Prompt
-In this section, we are going to create prompt for our experiment based on the data we have selected in `/data/text_emulation/all_data`.
+In this section, we are going to create prompt for our experiment based on the data we have selected in `/data/text-emulation/all-data`.
 Then we run this command to create prompts.
 
 ```
-python create-prompt.py  --datasource 'Path to the data source' --name 'Name for the output file' --document_type  'Command to generate prompts'
+python create-prompt.py  --datasource 'Path to the data source' --name 'Name for the output file' --document-type  'Command to generate prompts'
 ```
 
 #### Text emulation
@@ -107,13 +107,13 @@ python opt.py  --model "facebook/opt-2.7b" --input "/your-dir/few_shot_pubmed.js
 ## Results
 After we are done with the text emulation, we run this script to get all of the required stat 
 ```
-cd \heaps-law-llm\text_emulation\generatedData
+cd \heaps-law-llm\text-emulation\generated-data
 python cal-data-suf.py
 ```
 
 For the PCA we need a different type of data, we run
 ```
-cd \heaps-law-llm\text_emulation\generated_data
+cd \heaps-law-llm\text-emulation\generated-data
 python cal-data-pca-suf.py
 ```
 ## Statistical Analysis
