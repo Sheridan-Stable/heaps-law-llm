@@ -92,12 +92,7 @@ python cal-data-pca-suf.py
 
 ## Statistical Analysis
 
-All code is written in R version `4.4.2`. We’ll use RStudio to run everything.
-We tell our story in two main parts:
-```
-1: Folder `tables` contains our Multiple Regression Analysis
-2: Folder `figures` contains our plots and visualizations
-```
+All code is written in R version `4.4.2`, and saved in R markdown files, which can be run in RStudio. 
 
 ### Multiple Regression Analysis Tables
 
