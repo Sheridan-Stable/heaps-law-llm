@@ -90,7 +90,7 @@ For the PCA we need a different type of data. To obtain it, `cd` into the `cd \h
 python cal-data-pca-suf.py
 ```
 
-### Statistical Analysis
+## Statistical Analysis
 
 All code is written in R (version `4.4.2`). We’ll use RStudio to run everything.
 We tell our story in two main parts:
