@@ -16,7 +16,7 @@ We selected corpora from the Pile ([Arxiv preprint](https://arxiv.org/abs/2101.0
 
 ## Text Emulation
 
-Text emulation code is written in `Python 3.12.4`.  Run the following command to install all of the required libraries: 
+Text emulation code is written in Python `3.12.4`.  Run the following command to install all of the required libraries: 
 ```
 pip install -r requirements.txt
 ```
