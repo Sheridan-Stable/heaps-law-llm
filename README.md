@@ -102,22 +102,21 @@ We tell our story in two main parts:
 ### Multiple Regression Analysis Tables
 
 Here is a general procedure for reproducing the multiple linear regression analysis tables:
-```
-1: Navigate to the `tables` subfolder of interest
-2: Open the `.Rmd` file for the table you want to produce
-3: Run each code block (they include detailed instructions)
-4: When all chunks finish, your table will appear 
-```
+
+1. Navigate to the `tables` subfolder of interest
+2. Open the `.Rmd` file for the table you want to produce
+3. Run each code block (they include detailed instructions)
+4. When all chunks finish, the table will appear 
+
 
 ### Figures
 
 Here is a general procedure for reproducing selected manuscript figures:
-```
-1: Navigate to the `figures` subfolder of interest
-2: Open the `.Rmd` file for the figure you want to produce
-3: Run each code block (they include detailed instructions)
-4: When all chunks finish, your figure will appear
-```
+
+1. Navigate to the `figures` subfolder of interest
+2. Open the `.Rmd` file for the figure you want to produce
+3. Run each code block (they include detailed instructions)
+4. When all chunks finish, your figure will appear
 
 ## Citation
 
