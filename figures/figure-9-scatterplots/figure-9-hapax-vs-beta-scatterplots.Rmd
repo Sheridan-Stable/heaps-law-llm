@@ -1,0 +1,167 @@
+---
+title: "Hapax Richness vs. Beta Scatterplots"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+output: html_notebook
+---
+
+
+```{r setup, include = FALSE}
+# Specify global settings
+knitr::opts_chunk$set(echo = TRUE)
+
+# Start fresh by clearing R environment
+rm(list = ls())
+```
+
+
+```{r}
+# Load required libraries
+library(tidyverse)
+library(GGally)
+library(ggpubr) # ANOVA boxplots
+library(RColorBrewer)
+library(scales)
+library(here) # Simplify file i/o
+library(latex2exp)
+
+# Custom colors
+hex <- hue_pal()(3)
+gg_red <- hex[1]
+gg_green <- hex[2]
+gg_blue <- hex[3]
+gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]
+gg_purple <- "#C77CFF"
+
+# Custom palette
+my_palette <- c("human" = gg_red, "ai" = gg_green, "gptneo" = gg_blue, "pythia" = gg_orange, "opt" = gg_purple)
+```
+
+
+
+
+## Load and Prepare Data
+
+```{r}
+# Load the raw data:
+file_path  <- "../../data/llm-and-human-heapslaw-stats.csv"
+rawdata <- read.csv(file_path, stringsAsFactors = FALSE)
+```
+
+
+```{r}
+# Create wrangled data frame:
+dat <- rawdata |>
+  mutate(
+    vocab = factor(vocab, levels = c("open", "closed")),
+    prompt = factor(prompt, levels = c("none", "zeroshot", "oneshot", "fewshot")),
+    model_name = factor(model_name, levels = c("human", "gptneo", "pythia", "opt")),
+    corpus = factor(corpus, levels = c("pubmed", "book2", "hn", "wiki")),
+    hapax_richness = singleton_count / total_words
+  ) |>
+  select(-c(file_name, corpus, model_size, mean, s.d, r, vocab_size, singleton_count, total_words, alpha)) # Drop irrelevant columns
+
+
+# Print to console:
+dat
+```
+
+
+
+## Heaps' Law Parameters Scatterplots
+
+### Open Vocab Setting
+
+```{r}
+# Extract open vocab setting subdata:
+dat_open <- dat |>
+  filter(vocab == "open") |>
+  select(-c("vocab"))
+
+# Print to console:  
+dat_open
+```
+
+
+```{r}
+# Scatterplot:
+p <- ggplot(dat_open, aes(x = log10(hapax_richness), y = beta, color = model_name, shape = prompt)) +
+  geom_point(alpha = 0.6, size = 2) +
+  scale_color_manual(
+    values = c(gg_red, gg_blue, gg_orange, gg_purple),
+    labels = c("Human", "GPT-Neo", "Pythia", "OPT")
+  ) +
+  scale_shape_manual(
+    values = c(19, 15, 17, 18),
+    labels = c("None", "Zero-shot", "One-shot", "Few-shot")
+  ) +
+  theme_minimal() +
+  guides(color = guide_legend("Model"), shape = guide_legend("Prompt")) +
+  ggtitle("Open vocabulary setting") +
+  xlab("log10(Hapax richness)") +
+  ylab("Beta")
+
+# Print to console:
+p
+
+# Save to PDF file with transparent background.
+  ggsave(
+    filename = here("hapax-richness-vs-beta-open-vocab.pdf"),
+    plot = p,
+    device = "pdf",
+    width = 6,
+    height = 6,
+    bg = "transparent"
+  )
+```
+
+
+
+### Closed Vocab Setting
+
+```{r}
+# Extract open vocab setting subdata:
+dat_closed <- dat |>
+  filter(vocab == "closed") |>
+  select(-c("vocab"))
+
+# Print to console:  
+dat_closed
+```
+
+
+```{r}
+# Scatterplot:
+p <- ggplot(dat_closed, aes(x = log10(hapax_richness), y = beta, color = model_name, shape = prompt)) +
+  geom_point(alpha = 0.6, size = 2) +
+  scale_color_manual(
+    values = c(gg_red, gg_blue, gg_orange, gg_purple),
+    labels = c("Human", "GPT-Neo", "Pythia", "OPT")
+  ) +
+  scale_shape_manual(
+    values = c(19, 15, 17, 18),
+    labels = c("None", "Zero-shot", "One-shot", "Few-shot")
+  ) +
+  theme_minimal() +
+  guides(color = guide_legend("Model"), shape = guide_legend("Prompt")) +
+  ggtitle("Closed vocabulary setting") +
+  xlab("log10(Hapax richness)") +
+  ylab("Beta")
+
+# Print to console:
+p
+
+# Save to PDF file with transparent background.
+  ggsave(
+    filename = here("hapax-richness-vs-beta-closed-vocab.pdf"),
+    plot = p,
+    device = "pdf",
+    width = 6,
+    height = 6,
+    bg = "transparent"
+  )
+```
+
+
+
+
+

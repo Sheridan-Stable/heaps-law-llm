@@ -1,0 +1,305 @@
+---
+title: "Plot Heaps' Law Curves for PubMed Abstracts Case Study"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+output: html_notebook
+---
+
+# Preliminaries
+```{r}
+# Delete all variables initialized in R session, if any
+rm(list = ls())
+
+# Load libraries
+library(tidyverse)
+library(here)
+library(reticulate)
+library(magicaxis)
+require(broom)
+library(RColorBrewer)
+library(scales)
+library(latex2exp)
+library(grid)
+
+# Set plot colors 
+gg_color_hue = function(n, alpha = 1) {
+  hues <- seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100, alpha = alpha)[1 : n]
+}
+cols <- c("grey25", gg_color_hue(n = 3))
+tcols <- c("grey25", gg_color_hue(n = 3, alpha = 0.5))
+gray25 <- cols[1]; red <- cols[2]; green <- cols[3]; blue <- cols[4]
+tred <- cols[2]; tgreen <- tcols[3]; tblue <- tcols[4]
+
+# Custom color scheme
+hex <- hue_pal()(3)
+gg_red <- hex[1]
+gg_green <- hex[2]
+gg_blue <- hex[3]
+gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]
+gg_purple <- "#C77CFF"
+```
+
+# Define Heaps' law
+```{r}
+# Heaps' law
+heaps_law <- function(x, alpha, beta) {
+  alpha * x ^ beta
+}
+
+# Plotting colors
+COLORS <- c(
+  "pubmed"     = gg_red,
+  "gptneo125m" = gg_blue,
+  "gptneo1.3b" = gg_green,
+  "gptneo2.7b" = gg_orange
+)
+```
+
+
+
+# Open vocabulary setting
+```{r}
+# this is hard code value that take from file_path  llm_and_human_heapslaw_stats.csv
+# Hard code estimate alpha and beta values
+
+# PubMed Abstracts
+alpha_hat <- round(23.484, 3)
+beta_hat <- round(0.544, 3)
+vocab_size <- 153889
+total_word <- 10442049
+  
+# GPT-Neo 125m
+alpha_hat1 <- round(6.976, 3)
+beta_hat1 <- round(0.604, 3)
+vocab_size1 <- 108309
+total_word1 <- 8558267
+
+# GPT-Neo 1.3B
+alpha_hat2 <- round(15.0789, 3)
+beta_hat2 <- round(0.5441, 3)
+vocab_size2 <- 102661
+total_word2 <- 11027223
+
+# GPT-Neo 2.7B
+alpha_hat3 <- round(20.0078, 3)
+beta_hat3 <- round(0.5347, 3)
+vocab_size3 <- 112593
+total_word3 <- 10248310
+
+# Hard code collection size and vocab size limits
+n_max <- max(total_word, total_word1, total_word2, total_word3) * 1.1
+V_max <- max(vocab_size, vocab_size1, vocab_size2, vocab_size3) * 1.1
+```
+
+
+# create dataframe
+```{r}
+# create each data frame
+# Create data frame for Heaps' law curves
+heaps_data <- rbind(
+  data.frame(
+    n = c(0, seq(1, total_word, length.out = 1000)),
+    V = c(0, heaps_law(seq(1, total_word, length.out = 1000), alpha_hat, beta_hat)),
+    corpus = "pubmed"
+  ),
+  data.frame(
+    n = c(0, seq(1, total_word1, length.out = 1000)),
+    V = c(0, heaps_law(seq(1, total_word1, length.out = 1000), alpha_hat1, beta_hat1)),
+    corpus = "gptneo125m"
+  ),
+  data.frame(
+    n = c(0, seq(1, total_word2, length.out = 1000)),
+    V = c(0, heaps_law(seq(1, total_word2, length.out = 1000), alpha_hat2, beta_hat2)),
+    corpus = "gptneo1.3b"
+  ),
+  data.frame(
+    n = c(0, seq(1, total_word3, length.out = 1000)),
+    V = c(0, heaps_law(seq(1, total_word3, length.out = 1000), alpha_hat3, beta_hat3)),
+    corpus = "gptneo2.7b"
+  )
+)
+
+# Ensure "corpus" is a factor with levels matching COLORS
+heaps_data$corpus <- factor(heaps_data$corpus, levels = names(COLORS))
+```
+
+
+# Plot
+```{r}
+# Generate plot
+p <- ggplot(
+  data = heaps_data, aes(x = n, y = V, color = corpus)) +
+  geom_line(linewidth = 1) +
+  theme_minimal() +
+  theme(
+    legend.position = c(0.99, 0.01),
+    legend.justification = c("right", "bottom"),
+    legend.text = element_text(size = rel(0.75)),
+    legend.background = element_rect(fill = "gray95", color = NA),
+    plot.margin = unit(c(1, 1, 1, 1), "cm") # Adjust margins here
+  ) +
+  labs(
+    title = "Open vocabulary setting",
+    x = "Corpus size",
+    y = "Vocabulary size",
+    color = NULL  # Remove legend title
+  ) +
+  scale_color_manual(
+    labels = c(
+      bquote("PubMed Abstracts:" ~ hat(alpha) == .(alpha_hat) ~ ", " ~ hat(beta) == .(beta_hat)),
+      bquote("GPT-Neo 125m:" ~ hat(alpha) == .(alpha_hat1) ~ ", " ~ hat(beta) == .(beta_hat1)),
+      bquote("GPT-Neo 1.3B:" ~ hat(alpha) == .(alpha_hat2) ~ ", " ~ hat(beta) == .(beta_hat2)),
+      bquote("GPT-Neo 2.7B:" ~ hat(alpha) == .(alpha_hat3) ~ ", " ~ hat(beta) == .(beta_hat3))
+    ),
+    values = COLORS,
+    name = NULL  # Remove legend title
+  ) +
+  scale_x_continuous(
+    limits = c(0, n_max),
+    expand = expansion(mult = c(0, 0.05)),
+    labels = scientific
+  ) +
+  scale_y_continuous(
+    limits = c(0, V_max),
+    expand = c(0, 0)
+  )
+
+# Save to plot to PDF with transparent background
+ggsave(
+  plot = p,
+  filename = here("pubmed-open-vocab.pdf"),
+  device = "pdf",
+  width = 6,
+  height = 6,
+  units = "in",
+  dpi = 320,
+  limitsize = FALSE
+)
+```
+
+
+
+
+# Closed vocabulary setting
+
+```{r}
+# Hard code estimate alpha and beta values
+
+# PubMed Abstracts
+alpha_hat <- round(395.3874, 3)
+beta_hat <- round(0.297, 3)
+vocab_size <- 42796
+total_word <- 7430935
+  
+# GPT-Neo 125m
+alpha_hat1 <- round(220.5713, 3)
+beta_hat1 <- round(0.3102, 3)
+vocab_size1 <- 27485
+total_word1 <- 5898959
+
+# GPT-Neo 1.3B
+alpha_hat2 <- round(282.2527, 3)
+beta_hat2 <- round(0.3009, 3)
+vocab_size2 <- 32815
+total_word2 <- 7667967
+
+# GPT-Neo 2.7B
+alpha_hat3 <- round(312.2714, 3)
+beta_hat3 <- round(0.2989, 3)
+vocab_size3 <- 34454
+total_word3 <- 7131124
+
+# Hard code collection size and vocab size limits
+n_max <- max(total_word, total_word1, total_word2, total_word3) * 1.1
+V_max <- max(vocab_size, vocab_size1, vocab_size2, vocab_size3) * 1.1
+```
+
+
+```{r}
+# Create data frame for Heaps' law curves
+heaps_data <- rbind(
+  data.frame(
+    n = c(0, seq(1, total_word, length.out = 1000)),
+    V = c(0, heaps_law(seq(1, total_word, length.out = 1000), alpha_hat, beta_hat)),
+    corpus = "pubmed"
+  ),
+  data.frame(
+    n = c(0, seq(1, total_word1, length.out = 1000)),
+    V = c(0, heaps_law(seq(1, total_word1, length.out = 1000), alpha_hat1, beta_hat1)),
+    corpus = "gptneo125m"
+  ),
+  data.frame(
+    n = c(0, seq(1, total_word2, length.out = 1000)),
+    V = c(0, heaps_law(seq(1, total_word2, length.out = 1000), alpha_hat2, beta_hat2)),
+    corpus = "gptneo1.3b"
+  ),
+  data.frame(
+    n = c(0, seq(1, total_word3, length.out = 1000)),
+    V = c(0, heaps_law(seq(1, total_word3, length.out = 1000), alpha_hat3, beta_hat3)),
+    corpus = "gptneo2.7b"
+  )
+)
+
+# Ensure "corpus" is a factor with levels matching COLORS
+heaps_data$corpus <- factor(heaps_data$corpus, levels = names(COLORS))
+```
+
+
+
+```{r}
+# Generate plot
+p <- ggplot(
+  data = heaps_data, aes(x = n, y = V, color = corpus)) +
+  geom_line(linewidth = 1) +
+  theme_minimal() +
+  theme(
+    legend.position = c(0.99, 0.01),
+    legend.justification = c("right", "bottom"),
+    legend.text = element_text(size = rel(0.75)),
+    legend.background = element_rect(fill = "gray95", color = NA),
+    plot.margin = unit(c(1, 1, 1, 1), "cm") # Adjust margins here
+  ) +
+  labs(
+    title = "Closed vocabulary setting",
+    x = "Corpus size",
+    y = "Vocabulary size",
+    color = NULL  # Remove legend title
+  ) +
+  scale_color_manual(
+    labels = c(
+      bquote("PubMed Abstracts:" ~ hat(alpha) == .(alpha_hat) ~ ", " ~ hat(beta) == .(beta_hat)),
+      bquote("GPT-Neo 125m:" ~ hat(alpha) == .(alpha_hat1) ~ ", " ~ hat(beta) == .(beta_hat1)),
+      bquote("GPT-Neo 1.3B:" ~ hat(alpha) == .(alpha_hat2) ~ ", " ~ hat(beta) == .(beta_hat2)),
+      bquote("GPT-Neo 2.7B:" ~ hat(alpha) == .(alpha_hat3) ~ ", " ~ hat(beta) == .(beta_hat3))
+    ),
+    values = COLORS,
+    name = NULL  # Remove legend title
+  ) +
+  scale_x_continuous(
+    limits = c(0, n_max),
+    expand = expansion(mult = c(0, 0.05)),
+    labels = scientific
+  ) +
+  scale_y_continuous(
+    limits = c(0, V_max),
+    expand = c(0, 0)
+  )
+
+# Save to plot to PDF with transparent background
+ggsave(
+  plot = p,
+  filename = here("pubmed-closed-vocab.pdf"),
+  device = "pdf",
+  width = 6,
+  height = 6,
+  units = "in",
+  dpi = 320,
+  limitsize = FALSE
+)
+```
+
+
+
+
+
+
