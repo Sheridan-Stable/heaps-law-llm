@@ -1,3 +1,10 @@
+###
+title: "table-7-two-sample-Z-tests"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+###
+
+
+
 from statsmodels.stats.proportion import proportions_ztest
 
 count = np.array([420951, 904344])

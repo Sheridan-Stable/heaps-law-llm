@@ -1,5 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+###
+title: "table-F.1-logistic-vocabulary-growth-model-of-Debowski"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+###
+
 import os
 import json
 import csv

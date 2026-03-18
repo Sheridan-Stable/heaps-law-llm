@@ -1,3 +1,9 @@
+###
+title: "table-B.1-comparison-of-hapax-richness"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+###
+
+
 import json
 from collections import Counter
 

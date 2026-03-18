@@ -1,3 +1,9 @@
+###
+title: "table-D.1-default-setting-vs-adjust-setting"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+###
+
+
 import torch
 import json
 from torch.utils.data import Dataset, DataLoader

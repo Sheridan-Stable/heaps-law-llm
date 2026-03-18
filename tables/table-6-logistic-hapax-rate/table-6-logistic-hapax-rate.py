@@ -1,4 +1,7 @@
-
+###
+title: "table-6-logistic-hapax-rate"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+###
 
 import os
 import json
