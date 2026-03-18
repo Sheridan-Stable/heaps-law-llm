@@ -1,6 +1,6 @@
 # A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law
 
-This repository contains computer code for reproducing the results described in the manuscript “A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law” (under review with [Computational Linguistics](https://direct.mit.edu/coli)).
+This repository contains computer code for reproducing the results described in the manuscript “A Comparative Analysis of Lexical Diversity in Human-Written and Large Language Model-Emulated Text Using Heaps’ Law”.
 
 ## Getting Started
 
@@ -92,14 +92,19 @@ python cal-data-pca-suf.py
 
 ## Statistical Analysis
 
-All code is written in R version `4.4.2`, and saved in R markdown files, which can be run in RStudio. 
+All code is written in R version `4.4.2` and Python version `3.11.2`. We’ll use RStudio and Pycharm to run everything.
+We tell our story in two main parts:
+```
+1: Folder `tables` contains our Multiple Regression Analysis
+2: Folder `figures` contains our plots and visualizations
+```
 
-### Multiple Regression Analysis Tables
+### Tables
 
 Here is a general procedure for reproducing the multiple linear regression analysis tables:
 
 1. Navigate to the `tables` subfolder of interest
-2. Open the `.Rmd` file for the table you want to produce
+2. Open the `.Rmd` or `.py` file for the table you want to produce
 3. Run each code block (they include detailed instructions)
 4. When all chunks finish, the table will appear 
 
@@ -109,7 +114,7 @@ Here is a general procedure for reproducing the multiple linear regression analy
 Here is a general procedure for reproducing selected manuscript figures:
 
 1. Navigate to the `figures` subfolder of interest
-2. Open the `.Rmd` file for the figure you want to produce
+2. Open the `.Rmd` or `.py` file for the figure you want to produce
 3. Run each code block (they include detailed instructions)
 4. When all chunks finish, your figure will appear
 

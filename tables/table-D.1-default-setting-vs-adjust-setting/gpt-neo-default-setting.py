@@ -48,9 +48,6 @@ class LLMsGeneration:
                                             max_new_tokens = 300,
                                             pad_token_id=self.tokenizer.pad_token_id,
                                            do_sample=True,  # Enable sampling
-                                           top_p=0.9,  # Use nucleus sampling (top-p)
-                                           temperature=1,  # Increase temperature for more randomness
-                                           top_k=50
                                                      )
 
             outputs.extend(generated.cpu().numpy())

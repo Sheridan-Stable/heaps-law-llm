@@ -1,0 +1,631 @@
+---
+title: "Plot The logistic model of Debowski"
+author: "Uyen 'Rachel' Lai and Paul Sheridan"
+output: html_notebook
+---
+```{r}
+
+suppressWarnings(suppressMessages({
+  library(tidyverse)
+  library(jsonlite)
+  library(scales)
+  library(here)
+}))
+
+
+# Delete all variables initialized in R session, if any
+rm(list = ls())
+
+# Load libraries
+library(tidyverse)
+library(here)
+library(reticulate)
+library(magicaxis)
+require(broom)
+library(RColorBrewer)
+library(scales)
+library(latex2exp)
+library(grid)
+
+# Set plot colors 
+gg_color_hue = function(n, alpha = 1) {
+  hues <- seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100, alpha = alpha)[1 : n]
+}
+cols <- c("grey25", gg_color_hue(n = 3))
+tcols <- c("grey25", gg_color_hue(n = 3, alpha = 0.5))
+gray25 <- cols[1]; red <- cols[2]; green <- cols[3]; blue <- cols[4]
+tred <- cols[2]; tgreen <- tcols[3]; tblue <- tcols[4]
+
+```
+
+#open vocabulary case
+
+# The logistic model of Debowski params + config Json
+```{r}
+FILES_OPEN <- tribble(
+  ~path,                                     ~label,
+  "../../PubMed_human_Open.json",                 "Human",
+  "../../PubMed_gptneo-125M_fewshot_Open.json",   "GPT-Neo 125M",
+  "../../PubMed_gptneo-1.3B_fewshot_Open.json",   "GPT-Neo 1.3B",
+  "../../PubMed_gptneo-2.7B_fewshot_Open.json",   "GPT-Neo 2.7B"
+)
+
+# Open-vocab G-model parameters
+G_PARAMS_OPEN <- tribble(
+  ~label,          ~alpha,    ~beta,    ~gamma,
+  "Human",         -5.1689,   0.5427,   0.8353,
+  "GPT-Neo 125M",  -2.7535,   0.6061,   1.0610,
+  "GPT-Neo 1.3B",  -4.1221,   0.5521,   0.9545,
+  "GPT-Neo 2.7B",  -4.6606 ,   0.5421,   0.8845
+)
+
+TOKEN_CAP_PER_SUBLIST <- 225
+RANDOM_SEED           <- 42L
+
+OUT_PDF <- here("pubmed-open-vocab-Gmodel.pdf")
+```
+
+# Assign color
+```{r}
+# Colours 
+hex <- hue_pal()(3)
+gg_red <- hex[1]
+gg_green <- hex[2]
+gg_blue <- hex[3]
+gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]
+gg_purple <- "#C77CFF"
+
+COLORS <- c(
+"Human"     = gg_red,
+"GPT-Neo 125M" = gg_blue,
+"GPT-Neo 1.3B" = gg_green,
+"GPT-Neo 2.7B" = gg_orange
+)
+corpora_levels <- c("Human", "GPT-Neo 125M", "GPT-Neo 1.3B", "GPT-Neo 2.7B")
+names(COLORS) <- corpora_levels
+```
+
+
+# The logistic model of Debowski 
+```{r}
+
+
+g_paper <- function(n, alpha, beta, gamma) {
+  n <- pmax(as.numeric(n), 1)
+  nprime <- exp(-alpha) * n
+  c <- 2 ^ ((1 - beta) / gamma)
+  c * nprime / ((nprime^gamma + 1) ^ ((1 - beta) / gamma))
+}
+```
+
+```{r}
+cumulative_NV_from_sublists_fast <- function(docs,
+                                             cap_per_sublist,
+                                             seed = 42L) {
+  set.seed(seed)
+
+  idx  <- sample(seq_along(docs))
+  docs <- docs[idx]
+
+  capped <- lapply(docs, function(sub) {
+    if (!is.list(sub) && !is.vector(sub)) return(character(0))
+    sub <- unlist(sub, use.names = FALSE)
+    if (length(sub) == 0) return(character(0))
+    sub[seq_len(min(length(sub), cap_per_sublist))]
+  })
+  capped <- capped[lengths(capped) > 0]
+
+  N_vec <- numeric(length(capped))
+  V_vec <- numeric(length(capped))
+
+  seen_env <- new.env(hash = TRUE, parent = emptyenv())
+  N <- 0L
+  V <- 0L
+
+  for (i in seq_along(capped)) {
+    sub <- capped[[i]]
+    N   <- N + length(sub)
+
+    for (tok in sub) {
+      if (!exists(tok, envir = seen_env, inherits = FALSE)) {
+        assign(tok, TRUE, envir = seen_env)
+        V <- V + 1L
+      }
+    }
+
+    N_vec[i] <- N
+    V_vec[i] <- V
+  }
+
+  tibble(n = N_vec, V = V_vec)
+}
+```
+
+
+# Build The logistic model of Debowski curves 
+
+```{r}
+raw_list   <- list()
+g_list     <- list()
+
+for (i in seq_len(nrow(FILES_OPEN))) {
+  path  <- FILES_OPEN$path[i]
+  label <- FILES_OPEN$label[i]
+
+  if (!file.exists(path) && file.exists(paste0(path, ".json"))) {
+    path <- paste0(path, ".json")
+  }
+  if (!file.exists(path)) {
+    warning("File not found: ", path)
+    next
+  }
+
+  message("Reading: ", path)
+  docs <- jsonlite::fromJSON(path)
+
+  # empirical open-vocab V(N), sublist-level
+  nv <- cumulative_NV_from_sublists_fast(
+    docs,
+    cap_per_sublist = TOKEN_CAP_PER_SUBLIST,
+    seed            = RANDOM_SEED
+  )
+  nv$corpus <- label
+  raw_list[[label]] <- nv
+
+  # G-model curve for this corpus
+  pars <- G_PARAMS_OPEN %>% filter(label == !!label)
+  if (nrow(pars) != 1) stop("No unique parameters for label ", label)
+
+  alpha <- pars$alpha
+  beta  <- pars$beta
+  gamma <- pars$gamma
+
+  n_min  <- max(1, min(nv$n))
+  n_max_c <- max(nv$n)
+  n_grid <- seq(n_min, n_max_c, length.out = 1000)
+  V_grid <- g_paper(n_grid, alpha, beta, gamma)
+
+  g_list[[label]] <- tibble(
+    n      = n_grid,
+    V      = V_grid,
+    corpus = label
+  )
+
+  rm(docs)
+  gc()
+}
+
+raw_open    <- bind_rows(raw_list)
+g_data_open <- bind_rows(g_list)
+
+raw_open$corpus    <- factor(raw_open$corpus,    levels = corpora_levels)
+g_data_open$corpus <- factor(g_data_open$corpus, levels = corpora_levels)
+```
+
+
+# Legend label parameters 
+```{r}
+
+
+alpha_h   <- -5.1689; beta_h   <- 0.5418; gamma_h   <- 0.8353
+alpha_125 <- -2.7535; beta_125 <- 0.6069; gamma_125 <- 1.0610
+alpha_13  <- -4.1221; beta_13  <- 0.5461; gamma_13  <- 0.9545
+alpha_27  <- -4.6606; beta_27  <-0.5421; gamma_27  <-  0.8845
+
+n_max <- max(raw_open$n, na.rm = TRUE) *1.1
+V_max <- max(raw_open$V, na.rm = TRUE) *1.1
+
+scientific <- function(x) format(x, scientific = TRUE)
+```
+
+# Plot
+```{r}
+
+p <- ggplot()  +
+  # G-model curves with color by corpus
+  geom_line(
+    data = g_data_open,
+    aes(x = n, y = V, color = corpus),
+    linewidth = 1.3
+  ) +
+  # empirical curves (all corpora) in gray
+  geom_line(
+    data = raw_open,
+    aes(
+      x = n,
+      y = V,
+      group = corpus,
+      color = "Empirical Data"  
+    ),
+    linewidth = 0.6,
+    linetype = 2
+  )  +
+  theme_minimal() +
+  theme(
+    legend.position      = c(0.99, 0.01),
+    legend.justification = c("right", "bottom"),
+    legend.text          = element_text(size = rel(0.75)),
+    legend.background    = element_rect(fill = "gray95", color = NA),
+    plot.margin          = unit(c(1, 1, 1, 1), "cm")
+  ) +
+  labs(
+    title = "Open vocabulary setting",
+    x     = "Corpus size",
+    y     = "Vocabulary size",
+    color = NULL
+  ) +
+  scale_color_manual(
+    breaks = c("Empirical Data", names(COLORS)),
+    values = c(
+      "Empirical Data" = "grey35",
+      COLORS
+    ),
+    labels = list(
+      "Empirical data",
+      bquote("PubMed Abstracts:" ~
+             hat(alpha) == .(alpha_h)   ~ ", " ~
+             hat(beta)  == .(beta_h)    ~ ", " ~
+             hat(gamma) == .(gamma_h)),
+      bquote("GPT-Neo 125M:" ~
+             hat(alpha) == .(alpha_125) ~ ", " ~
+             hat(beta)  == .(beta_125)  ~ ", " ~
+             hat(gamma) == .(gamma_125)),
+      bquote("GPT-Neo 1.3B:" ~
+             hat(alpha) == .(alpha_13)  ~ ", " ~
+             hat(beta)  == .(beta_13)   ~ ", " ~
+             hat(gamma) == .(gamma_13)),
+      bquote("GPT-Neo 2.7B:" ~
+             hat(alpha) == .(alpha_27)  ~ ", " ~
+             hat(beta)  == .(beta_27)   ~ ", " ~
+             hat(gamma) == .(gamma_27))
+    ),
+    name = NULL
+  )  +
+  scale_x_continuous(
+    limits = c(0, n_max),
+    expand = expansion(mult = c(0, 0.05)),
+    labels = scientific
+  ) +
+  scale_y_continuous(
+    limits = c(0, V_max),
+    expand = c(0, 0)
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(
+        # 1 entry for "Empirical Data", then 4 corpora:
+        linetype = c("dashed", "solid", "solid", "solid", "solid"),
+        linewidth = c(0.6, 1.3, 1.3, 1.3, 1.3)
+      )
+    )
+  )
+p
+```
+
+# Save to PDF
+```{r}
+
+ggsave(
+  plot      = p,
+  filename  = OUT_PDF,
+  device    = "pdf",
+  width     = 6,
+  height    = 6,
+  units     = "in",
+  dpi       = 320,
+  limitsize = FALSE
+)
+```
+
+
+
+
+# Closed vocabulary JSONs 
+
+# The logistic model of Debowski params and Json config
+
+```{r}
+
+
+
+FILES_CLOSE <- tribble(
+  ~path,                                     ~label,
+  "../../data/PubMed_human_Close.json",                 "Human",
+  "../../data/PubMed_gptneo-125M_fewshot_Close.json",   "GPT-Neo 125M",
+  "../../data/PubMed_gptneo-1.3B_fewshot_Close.json",   "GPT-Neo 1.3B",
+  "../../data/PubMed_gptneo-2.7B_fewshot_Close.json",   "GPT-Neo 2.7B"
+)
+
+
+
+# Closed-vocab G-model parameters (your numbers)
+G_PARAMS_CLOSE <- tribble(
+  ~label,          ~alpha,    ~beta,    ~gamma,
+  "Human",         -10.1964,  0.1205,  0.0570,
+  "GPT-Neo 125M",  -8.4498,   0.1432,  0.0617,
+  "GPT-Neo 1.3B",  -9.0939,   0.1309,  0.0594,
+  "GPT-Neo 2.7B",  -9.3873,   0.1285,  0.0590
+)
+
+TOKEN_CAP_PER_SUBLIST <- 225
+RANDOM_SEED           <- 42L
+
+OUT_PDF <- here("pubmed-closed-vocab-Gmodel.pdf")
+
+```
+
+
+# Colours
+```{r}
+# Custom color scheme
+hex <- hue_pal()(3)
+gg_red <- hex[1]
+gg_green <- hex[2]
+gg_blue <- hex[3]
+gg_orange <- brewer.pal(n = 11, name = "PuOr")[4]
+gg_purple <- "#C77CFF"
+
+
+
+
+COLORS <- c(
+"Human"     = gg_red,
+"GPT-Neo 125M" = gg_blue,
+"GPT-Neo 1.3B" = gg_green,
+"GPT-Neo 2.7B" = gg_orange
+)
+corpora_levels <- c("Human", "GPT-Neo 125M", "GPT-Neo 1.3B", "GPT-Neo 2.7B")
+names(COLORS) <- corpora_levels
+```
+
+# The logistic model of Debowski 
+```{r}
+
+g_paper <- function(n, alpha, beta, gamma) {
+  n <- pmax(as.numeric(n), 1)
+  nprime <- exp(-alpha) * n
+  c <- 2 ^ ((1 - beta) / gamma)
+  c * nprime / ((nprime^gamma + 1) ^ ((1 - beta) / gamma))
+}
+```
+```{r}
+
+cumulative_NV_from_sublists_fast <- function(docs,
+                                             cap_per_sublist,
+                                             seed = 42L) {
+  set.seed(seed)
+
+  idx  <- sample(seq_along(docs))
+  docs <- docs[idx]
+
+  capped <- lapply(docs, function(sub) {
+    if (!is.list(sub) && !is.vector(sub)) return(character(0))
+    sub <- unlist(sub, use.names = FALSE)
+    if (length(sub) == 0) return(character(0))
+    sub[seq_len(min(length(sub), cap_per_sublist))]
+  })
+  capped <- capped[lengths(capped) > 0]
+
+  N_vec <- numeric(length(capped))
+  V_vec <- numeric(length(capped))
+
+  seen_env <- new.env(hash = TRUE, parent = emptyenv())
+  N <- 0L
+  V <- 0L
+
+  for (i in seq_along(capped)) {
+    sub <- capped[[i]]
+    N   <- N + length(sub)
+
+    for (tok in sub) {
+      if (!exists(tok, envir = seen_env, inherits = FALSE)) {
+        assign(tok, TRUE, envir = seen_env)
+        V <- V + 1L
+      }
+    }
+
+    N_vec[i] <- N
+    V_vec[i] <- V
+  }
+
+  tibble(n = N_vec, V = V_vec)
+}
+
+```
+
+# Build The logistic model of Debowski  curves
+```{r}
+
+raw_list   <- list()
+g_list     <- list()
+
+for (i in seq_len(nrow(FILES_CLOSE))) {
+  path  <- FILES_CLOSE$path[i]
+  label <- FILES_CLOSE$label[i]
+
+  if (!file.exists(path) && file.exists(paste0(path, ".json"))) {
+    path <- paste0(path, ".json")
+  }
+  if (!file.exists(path)) {
+    warning("File not found: ", path)
+    next
+  }
+
+  message("Reading: ", path)
+  docs <- jsonlite::fromJSON(path)
+
+  # empirical closed-vocab V(N), sublist-level
+  nv <- cumulative_NV_from_sublists_fast(
+    docs,
+    cap_per_sublist = TOKEN_CAP_PER_SUBLIST,
+    seed            = RANDOM_SEED
+  )
+  nv$corpus <- label
+  raw_list[[label]] <- nv
+
+  # G-model curve for this corpus
+  pars <- G_PARAMS_CLOSE %>% filter(label == !!label)
+  if (nrow(pars) != 1) stop("No unique parameters for label ", label)
+
+  alpha <- pars$alpha
+  beta  <- pars$beta
+  gamma <- pars$gamma
+
+  n_min <- max(1, min(nv$n))
+  n_max_c <- max(nv$n)
+  n_grid <- seq(n_min, n_max_c, length.out = 1000)
+  V_grid <- g_paper(n_grid, alpha, beta, gamma)
+
+  g_list[[label]] <- tibble(
+    n      = n_grid,
+    V      = V_grid,
+    corpus = label
+  )
+
+  rm(docs)
+  gc()
+}
+
+raw_close   <- bind_rows(raw_list)
+g_data_close <- bind_rows(g_list)
+
+raw_close$corpus   <- factor(raw_close$corpus,   levels = corpora_levels)
+g_data_close$corpus <- factor(g_data_close$corpus, levels = corpora_levels)
+```
+  
+  
+# Legend label parameters 
+  
+```{r}
+
+# Closed-vocab G-model parameters (your numbers)
+G_PARAMS_CLOSE <- tribble(
+  ~label,          ~alpha,    ~beta,    ~gamma,
+  "Human",         -10.1964,  0.1205,  0.0570,
+  "GPT-Neo 125M",  -8.4498,   0.1432,  0.0617,
+  "GPT-Neo 1.3B",  -9.0939,   0.1309,  0.0594,
+  "GPT-Neo 2.7B",  -9.3873,   0.1285,  0.0590
+)
+
+alpha_h   <- -10.1964; beta_h   <- 0.1205; gamma_h   <- 0.0570
+alpha_125 <- -8.4498;  beta_125 <- 0.1432; gamma_125 <- 0.0617
+alpha_13  <- -9.0939;  beta_13  <- 0.1309; gamma_13  <- 0.0594
+alpha_27  <- -9.3873;  beta_27  <- 0.1285; gamma_27  <- 0.0590
+n_max <- max(raw_close$n, na.rm = TRUE) * 1.1
+V_max <- max(raw_close$V, na.rm = TRUE)* 1.1
+
+scientific <- function(x) format(x, scientific = TRUE)
+```
+
+# Plot 
+```{r}
+
+p <- ggplot()  +
+  geom_line(
+    data = g_data_close,
+    aes(x = n, y = V, color = corpus),
+    linewidth = 1.3
+  )+
+  # empirical curves (all corpora) in gray
+  geom_line(
+    data = raw_close,
+    aes(
+      x = n,
+      y = V,
+      group = corpus,
+      color = "Empirical Data"   # <--- put into aes() so it appears in legend
+    ),
+    linewidth = 0.6,
+    linetype = 2
+  )  +
+  theme_minimal() +
+  theme(
+    legend.position      = c(0.99, 0.01),
+    legend.justification = c("right", "bottom"),
+    legend.text          = element_text(size = rel(0.75)),
+    legend.background    = element_rect(fill = "gray95", color = NA),
+    plot.margin          = unit(c(1, 1, 1, 1), "cm")
+  ) +
+  labs(
+    title = "Closed vocabulary setting",
+    x     = "Corpus size",
+    y     = "Vocabulary size",
+    color = NULL
+  ) +
+  scale_color_manual(
+    # first "Empirical data", then your 4 corpora
+    breaks = c("Empirical Data", names(COLORS)),
+    values = c(
+      "Empirical Data" = "grey35",  # gray for raw curves
+      COLORS                        # your original colors for fits
+    ),
+    labels = c(
+      "Empirical data",
+      bquote("PubMed Abstracts:" ~
+             hat(alpha) == .(alpha_h)   ~ ", " ~
+             hat(beta)  == .(beta_h)    ~ ", " ~
+             hat(gamma) == .(gamma_h)),
+      bquote("GPT-Neo 125M:" ~
+             hat(alpha) == .(alpha_125) ~ ", " ~
+             hat(beta)  == .(beta_125)  ~ ", " ~
+             hat(gamma) == .(gamma_125)),
+      bquote("GPT-Neo 1.3B:" ~
+             hat(alpha) == .(alpha_13)  ~ ", " ~
+             hat(beta)  == .(beta_13)   ~ ", " ~
+             hat(gamma) == .(gamma_13)),
+      bquote("GPT-Neo 2.7B:" ~
+             hat(alpha) == .(alpha_27)  ~ ", " ~
+             hat(beta)  == .(beta_27)   ~ ", " ~
+             hat(gamma) == .(gamma_27))
+   ),
+    name = NULL
+  ) +
+  scale_x_continuous(
+    limits = c(0, n_max),
+    expand = expansion(mult = c(0, 0.05)),
+    labels = scientific
+  ) +
+  scale_y_continuous(
+    limits = c(0, V_max),
+    expand = c(0, 0)
+  )+
+  scale_x_continuous(
+    limits = c(0, n_max),
+    expand = expansion(mult = c(0, 0.05)),
+    labels = scientific
+  ) +
+  scale_y_continuous(
+    limits = c(0, V_max),
+    expand = c(0, 0)
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(
+        # 1 entry for "Empirical Data", then 4 corpora:
+        linetype = c("dashed", "solid", "solid", "solid", "solid"),
+        linewidth = c(0.6, 1.3, 1.3, 1.3, 1.3)
+      )
+    )
+  )
+
+p
+
+
+```
+
+# Save 
+```{r}
+ggsave(
+  plot      = p,
+  filename  = OUT_PDF,
+  device    = "pdf",
+  width     = 6,
+  height    = 6,
+  units     = "in",
+  dpi       = 320,
+  limitsize = FALSE
+)
+
+
+```
