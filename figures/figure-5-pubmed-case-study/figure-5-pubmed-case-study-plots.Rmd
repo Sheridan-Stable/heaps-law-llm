@@ -40,49 +40,49 @@ gg_purple <- "#C77CFF"
 ```
 
 # Define Heaps' law
+
 ```{r}
-# Heaps' law
 heaps_law <- function(x, alpha, beta) {
-  alpha * x ^ beta
+alpha * x ^ beta
 }
 
-# Plotting colors
 COLORS <- c(
-  "pubmed"     = gg_red,
-  "gptneo125m" = gg_blue,
-  "gptneo1.3b" = gg_green,
-  "gptneo2.7b" = gg_orange
+"pubmed"     = gg_red,
+"gptneo125m" = gg_blue,
+"gptneo1.3b" = gg_green,
+"gptneo2.7b" = gg_orange
 )
 ```
 
 
 
 # Open vocabulary setting
+
 ```{r}
 # this is hard code value that take from file_path  llm_and_human_heapslaw_stats.csv
 # Hard code estimate alpha and beta values
 
 # PubMed Abstracts
-alpha_hat <- round(23.484, 3)
-beta_hat <- round(0.544, 3)
+alpha_hat <- round(24.5378 , 4)
+beta_hat <- round(0.5418, 4)
 vocab_size <- 153889
 total_word <- 10442049
   
 # GPT-Neo 125m
-alpha_hat1 <- round(6.976, 3)
-beta_hat1 <- round(0.604, 3)
+alpha_hat1 <- round(7.1831, 4)
+beta_hat1 <- round(0.6033, 4)
 vocab_size1 <- 108309
 total_word1 <- 8558267
 
 # GPT-Neo 1.3B
-alpha_hat2 <- round(15.0789, 3)
-beta_hat2 <- round(0.5441, 3)
+alpha_hat2 <- round(14.2471, 4)
+beta_hat2 <- round(0.5486 , 4)
 vocab_size2 <- 102661
 total_word2 <- 11027223
 
 # GPT-Neo 2.7B
-alpha_hat3 <- round(20.0078, 3)
-beta_hat3 <- round(0.5347, 3)
+alpha_hat3 <- round(19.5698 , 4)
+beta_hat3 <- round(0.5367 , 4)
 vocab_size3 <- 112593
 total_word3 <- 10248310
 
@@ -92,7 +92,8 @@ V_max <- max(vocab_size, vocab_size1, vocab_size2, vocab_size3) * 1.1
 ```
 
 
-# create dataframe
+# Create dataframe
+
 ```{r}
 # create each data frame
 # Create data frame for Heaps' law curves
@@ -124,35 +125,173 @@ heaps_data$corpus <- factor(heaps_data$corpus, levels = names(COLORS))
 ```
 
 
-# Plot
+# JSON config 
 ```{r}
-# Generate plot
-p <- ggplot(
-  data = heaps_data, aes(x = n, y = V, color = corpus)) +
-  geom_line(linewidth = 1) +
+data_dir <- here()
+open_files <- c(
+pubmed     = "PubMed_human_Open.json",
+gptneo125m = "PubMed_gptneo-125M_fewshot_Open.json",
+gptneo1.3b = "PubMed_gptneo-1.3B_fewshot_Open.json",
+gptneo2.7b = "PubMed_gptneo-2.7B_fewshot_Open.json"
+)
+
+RAW_CHECKPOINTS <- 1200
+
+read_tokens_from_json <- function(path) {
+x <- jsonlite::fromJSON(path)
+unlist(x, use.names = FALSE)
+}
+
+empirical_v_curve <- function(tokens, checkpoints = 1000, max_tokens = NULL) {
+if (!is.null(max_tokens)) {
+tokens <- tokens[seq_len(min(max_tokens, length(tokens)))]
+}
+N   <- length(tokens)
+idx <- unique(round(seq(1, N, length.out = checkpoints)))
+
+seen   <- new.env(hash = TRUE, parent = emptyenv())
+vcount <- 0L
+V      <- integer(length(idx))
+j      <- 1L
+
+for (i in seq_len(N)) {
+tk <- tokens[[i]]
+if (!exists(tk, envir = seen, inherits = FALSE)) {
+assign(tk, TRUE, envir = seen)
+vcount <- vcount + 1L
+}
+if (i == idx[j]) {
+V[j] <- vcount
+j <- j + 1L
+if (j > length(idx)) break
+}
+}
+
+tibble::tibble(n = idx, V = V)
+}
+
+```
+
+
+# Build empirical curves
+```{r}
+raw_list <- list()
+
+for (nm in names(open_files)) {
+path <- file.path(data_dir, open_files[[nm]])
+cat("Reading:", path, "\n")
+
+toks <- read_tokens_from_json(path)
+
+raw_list[[nm]] <- empirical_v_curve(
+tokens      = toks,
+checkpoints = RAW_CHECKPOINTS
+) %>%
+mutate(corpus = nm)
+}
+
+raw_open <- bind_rows(raw_list)
+raw_open$corpus <- factor(raw_open$corpus, levels = names(COLORS))
+
+```
+
+
+# Heaps' law curves (fits) 
+
+```{r}
+heaps_data <- rbind(
+data.frame(
+n      = c(0, seq(1, total_word,  length.out = 1000)),
+V      = c(0, heaps_law(seq(1, total_word,  length.out = 1000), alpha_hat,  beta_hat)),
+corpus = "pubmed"
+),
+data.frame(
+n      = c(0, seq(1, total_word1, length.out = 1000)),
+V      = c(0, heaps_law(seq(1, total_word1, length.out = 1000), alpha_hat1, beta_hat1)),
+corpus = "gptneo125m"
+),
+data.frame(
+n      = c(0, seq(1, total_word2, length.out = 1000)),
+V      = c(0, heaps_law(seq(1, total_word2, length.out = 1000), alpha_hat2, beta_hat2)),
+corpus = "gptneo1.3b"
+),
+data.frame(
+n      = c(0, seq(1, total_word3, length.out = 1000)),
+V      = c(0, heaps_law(seq(1, total_word3, length.out = 1000), alpha_hat3, beta_hat3)),
+corpus = "gptneo2.7b"
+)
+)
+
+heaps_data$corpus <- factor(heaps_data$corpus, levels = names(COLORS))
+```
+
+
+# Axis limits (based on both raw + fits)
+
+```{r}
+n_max <- max(
+total_word, total_word1, total_word2, total_word3,
+raw_open$n
+) * 1.1
+
+V_max <- max(
+vocab_size, vocab_size1, vocab_size2, vocab_size3,
+raw_open$V
+) * 1.1
+```
+
+
+# Plot
+
+```{r}
+p <- ggplot()  +
+  # Heaps' law fits with color by corpus
+  geom_line(
+    data = heaps_data,
+    aes(x = n, y = V, color = corpus),
+    linewidth = 1.3
+  )+
+  # empirical curves (all corpora) in gray
+  geom_line(
+    data = raw_open,
+    aes(
+      x = n,
+      y = V,
+      group = corpus,
+      color = "Empirical Data"   
+    ),
+    linewidth = 0.6,
+    linetype = 2
+  ) +
   theme_minimal() +
   theme(
-    legend.position = c(0.99, 0.01),
+    legend.position      = c(0.99, 0.01),
     legend.justification = c("right", "bottom"),
-    legend.text = element_text(size = rel(0.75)),
-    legend.background = element_rect(fill = "gray95", color = NA),
-    plot.margin = unit(c(1, 1, 1, 1), "cm") # Adjust margins here
+    legend.text          = element_text(size = rel(0.75)),
+    legend.background    = element_rect(fill = "gray95", color = NA),
+    plot.margin          = unit(c(1, 1, 1, 1), "cm")
   ) +
   labs(
     title = "Open vocabulary setting",
-    x = "Corpus size",
-    y = "Vocabulary size",
-    color = NULL  # Remove legend title
+    x     = "Corpus size",
+    y     = "Vocabulary size",
+    color = NULL
   ) +
   scale_color_manual(
-    labels = c(
-      bquote("PubMed Abstracts:" ~ hat(alpha) == .(alpha_hat) ~ ", " ~ hat(beta) == .(beta_hat)),
-      bquote("GPT-Neo 125m:" ~ hat(alpha) == .(alpha_hat1) ~ ", " ~ hat(beta) == .(beta_hat1)),
-      bquote("GPT-Neo 1.3B:" ~ hat(alpha) == .(alpha_hat2) ~ ", " ~ hat(beta) == .(beta_hat2)),
-      bquote("GPT-Neo 2.7B:" ~ hat(alpha) == .(alpha_hat3) ~ ", " ~ hat(beta) == .(beta_hat3))
+    # first "Empirical data", then your 4 corpora
+    breaks = c("Empirical Data", names(COLORS)),
+    values = c(
+      "Empirical Data" = "grey35",  # gray for raw curves
+      COLORS                        # your original colors for fits
     ),
-    values = COLORS,
-    name = NULL  # Remove legend title
+    labels = c(
+      "Empirical data",
+      bquote("PubMed Abstracts:" ~ hat(alpha) == .(alpha_hat)  ~ ", " ~ hat(beta) == .(beta_hat)),
+      bquote("GPT-Neo 125M:"     ~ hat(alpha) == .(alpha_hat1) ~ ", " ~ hat(beta) == .(beta_hat1)),
+      bquote("GPT-Neo 1.3B:"     ~ hat(alpha) == .(alpha_hat2) ~ ", " ~ hat(beta) == .(beta_hat2)),
+      bquote("GPT-Neo 2.7B:"     ~ hat(alpha) == .(alpha_hat3) ~ ", " ~ hat(beta) == .(beta_hat3))
+    ),
+    name = NULL
   ) +
   scale_x_continuous(
     limits = c(0, n_max),
@@ -164,18 +303,27 @@ p <- ggplot(
     expand = c(0, 0)
   )
 
-# Save to plot to PDF with transparent background
-ggsave(
-  plot = p,
-  filename = here("pubmed-open-vocab.pdf"),
-  device = "pdf",
-  width = 6,
-  height = 6,
-  units = "in",
-  dpi = 320,
-  limitsize = FALSE
-)
+p
 ```
+
+
+# Save to PDF
+
+```{r}
+ggsave(
+plot     = p,
+filename = here("pubmed-open-vocab.pdf"),
+device   = "pdf",
+width    = 6,
+height   = 6,
+units    = "in",
+dpi      = 320,
+limitsize = FALSE
+)
+
+```
+
+
 
 
 
@@ -186,26 +334,26 @@ ggsave(
 # Hard code estimate alpha and beta values
 
 # PubMed Abstracts
-alpha_hat <- round(395.3874, 3)
-beta_hat <- round(0.297, 3)
+alpha_hat <- round(418.6412 , 4)
+beta_hat <- round(0.2935, 4)
 vocab_size <- 42796
 total_word <- 7430935
   
 # GPT-Neo 125m
-alpha_hat1 <- round(220.5713, 3)
-beta_hat1 <- round(0.3102, 3)
+alpha_hat1 <- round(225.0053 , 4)
+beta_hat1 <- round(0.3090 , 4)
 vocab_size1 <- 27485
 total_word1 <- 5898959
 
 # GPT-Neo 1.3B
-alpha_hat2 <- round(282.2527, 3)
-beta_hat2 <- round(0.3009, 3)
+alpha_hat2 <- round(275.0182 , 4)
+beta_hat2 <- round(0.3025, 4)
 vocab_size2 <- 32815
 total_word2 <- 7667967
 
 # GPT-Neo 2.7B
-alpha_hat3 <- round(312.2714, 3)
-beta_hat3 <- round(0.2989, 3)
+alpha_hat3 <- round(312.8286 , 4)
+beta_hat3 <- round(0.2989, 4)
 vocab_size3 <- 34454
 total_word3 <- 7131124
 
@@ -246,34 +394,174 @@ heaps_data$corpus <- factor(heaps_data$corpus, levels = names(COLORS))
 
 
 
+# JSON config
+
 ```{r}
-# Generate plot
-p <- ggplot(
-  data = heaps_data, aes(x = n, y = V, color = corpus)) +
-  geom_line(linewidth = 1) +
+data_dir <- here()
+
+open_files <- c(
+pubmed     = "PubMed_human_Close.json",
+gptneo125m = "PubMed_gptneo-125M_fewshot_Close.json",
+gptneo1.3b = "PubMed_gptneo-1.3B_fewshot_Close.json",
+gptneo2.7b = "PubMed_gptneo-2.7B_fewshot_Close.json"
+)
+
+RAW_CHECKPOINTS <- 1200
+
+read_tokens_from_json <- function(path) {
+x <- jsonlite::fromJSON(path)
+unlist(x, use.names = FALSE)
+}
+
+empirical_v_curve <- function(tokens, checkpoints = 1000, max_tokens = NULL) {
+if (!is.null(max_tokens)) {
+tokens <- tokens[seq_len(min(max_tokens, length(tokens)))]
+}
+N   <- length(tokens)
+idx <- unique(round(seq(1, N, length.out = checkpoints)))
+
+seen   <- new.env(hash = TRUE, parent = emptyenv())
+vcount <- 0L
+V      <- integer(length(idx))
+j      <- 1L
+
+for (i in seq_len(N)) {
+tk <- tokens[[i]]
+if (!exists(tk, envir = seen, inherits = FALSE)) {
+assign(tk, TRUE, envir = seen)
+vcount <- vcount + 1L
+}
+if (i == idx[j]) {
+V[j] <- vcount
+j <- j + 1L
+if (j > length(idx)) break
+}
+}
+
+tibble::tibble(n = idx, V = V)
+}
+
+```
+
+
+# Build empirical curves 
+
+```{r}
+raw_list <- list()
+for (nm in names(open_files)) {
+path <- file.path(data_dir, open_files[[nm]])
+cat("Reading:", path, "\n")
+
+toks <- read_tokens_from_json(path)
+
+raw_list[[nm]] <- empirical_v_curve(
+tokens      = toks,
+checkpoints = RAW_CHECKPOINTS
+) %>%
+mutate(corpus = nm)
+}
+
+raw_open <- bind_rows(raw_list)
+raw_open$corpus <- factor(raw_open$corpus, levels = names(COLORS))
+
+```
+
+
+# Heaps' law curves (fits) – Close vocab
+
+```{r}
+heaps_data <- rbind(
+data.frame(
+n      = c(0, seq(1, total_word,  length.out = 1000)),
+V      = c(0, heaps_law(seq(1, total_word,  length.out = 1000), alpha_hat,  beta_hat)),
+corpus = "pubmed"
+),
+data.frame(
+n      = c(0, seq(1, total_word1, length.out = 1000)),
+V      = c(0, heaps_law(seq(1, total_word1, length.out = 1000), alpha_hat1, beta_hat1)),
+corpus = "gptneo125m"
+),
+data.frame(
+n      = c(0, seq(1, total_word2, length.out = 1000)),
+V      = c(0, heaps_law(seq(1, total_word2, length.out = 1000), alpha_hat2, beta_hat2)),
+corpus = "gptneo1.3b"
+),
+data.frame(
+n      = c(0, seq(1, total_word3, length.out = 1000)),
+V      = c(0, heaps_law(seq(1, total_word3, length.out = 1000), alpha_hat3, beta_hat3)),
+corpus = "gptneo2.7b"
+)
+)
+heaps_data$corpus <- factor(heaps_data$corpus, levels = names(COLORS))
+```
+
+
+# Axis limits (based on both raw + fits)
+
+```{r}
+n_max <- max(
+total_word, total_word1, total_word2, total_word3,
+raw_open$n
+) * 1.1
+
+V_max <- max(
+vocab_size, vocab_size1, vocab_size2, vocab_size3,
+raw_open$V
+) * 1.1
+```
+
+
+# Plot
+
+```{r}
+p <- ggplot() +
+  # Heaps' law fits with color by corpus
+  geom_line(
+    data = heaps_data,
+    aes(x = n, y = V, color = corpus),
+    linewidth = 1.3
+  )  +
+  # empirical curves (all corpora) in gray
+  geom_line(
+    data = raw_open,
+    aes(
+      x = n,
+      y = V,
+      group = corpus,
+      color = "Empirical data"  
+    ),
+    linewidth = 0.6,
+    linetype = 2
+  ) +
   theme_minimal() +
   theme(
-    legend.position = c(0.99, 0.01),
+    legend.position      = c(0.99, 0.01),
     legend.justification = c("right", "bottom"),
-    legend.text = element_text(size = rel(0.75)),
-    legend.background = element_rect(fill = "gray95", color = NA),
-    plot.margin = unit(c(1, 1, 1, 1), "cm") # Adjust margins here
+    legend.text          = element_text(size = rel(0.75)),
+    legend.background    = element_rect(fill = "gray95", color = NA),
+    plot.margin          = unit(c(1, 1, 1, 1), "cm")
   ) +
   labs(
     title = "Closed vocabulary setting",
-    x = "Corpus size",
-    y = "Vocabulary size",
-    color = NULL  # Remove legend title
+    x     = "Corpus size",
+    y     = "Vocabulary size",
+    color = NULL
   ) +
   scale_color_manual(
-    labels = c(
-      bquote("PubMed Abstracts:" ~ hat(alpha) == .(alpha_hat) ~ ", " ~ hat(beta) == .(beta_hat)),
-      bquote("GPT-Neo 125m:" ~ hat(alpha) == .(alpha_hat1) ~ ", " ~ hat(beta) == .(beta_hat1)),
-      bquote("GPT-Neo 1.3B:" ~ hat(alpha) == .(alpha_hat2) ~ ", " ~ hat(beta) == .(beta_hat2)),
-      bquote("GPT-Neo 2.7B:" ~ hat(alpha) == .(alpha_hat3) ~ ", " ~ hat(beta) == .(beta_hat3))
+    # first "Empirical data", then your 4 corpora
+    breaks = c("Empirical data", names(COLORS)),
+    values = c(
+      "Empirical data" = "grey35",  # gray for raw curves
+      COLORS                        # your original colors for fits
     ),
-    values = COLORS,
-    name = NULL  # Remove legend title
+    labels = c(
+      "Empirical data",
+      bquote("PubMed Abstracts:" ~ hat(alpha) == .(alpha_hat)  ~ ", " ~ hat(beta) == .(beta_hat)),
+      bquote("GPT-Neo 125M:"     ~ hat(alpha) == .(alpha_hat1) ~ ", " ~ hat(beta) == .(beta_hat1)),
+      bquote("GPT-Neo 1.3B:"     ~ hat(alpha) == .(alpha_hat2) ~ ", " ~ hat(beta) == .(beta_hat2)),
+      bquote("GPT-Neo 2.7B:"     ~ hat(alpha) == .(alpha_hat3) ~ ", " ~ hat(beta) == .(beta_hat3))
+    ),
+    name = NULL
   ) +
   scale_x_continuous(
     limits = c(0, n_max),
@@ -285,19 +573,23 @@ p <- ggplot(
     expand = c(0, 0)
   )
 
-# Save to plot to PDF with transparent background
-ggsave(
-  plot = p,
-  filename = here("pubmed-closed-vocab.pdf"),
-  device = "pdf",
-  width = 6,
-  height = 6,
-  units = "in",
-  dpi = 320,
-  limitsize = FALSE
-)
+p
 ```
 
+# Save to PDF
+
+```{r}
+ggsave(
+plot     = p,
+filename = here("pubmed-closed-vocab.pdf"),
+device   = "pdf",
+width    = 6,
+height   = 6,
+units    = "in",
+dpi      = 320,
+limitsize = FALSE
+)
+```
 
 
 
